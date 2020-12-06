@@ -8,6 +8,12 @@ namespace Magento\Braintree\Model;
 use Magento\Framework\Locale\ResolverInterface;
 use Magento\Braintree\Gateway\Config\PayPal\Config;
 
+/**
+ * Resolves locale for PayPal Express.
+ *
+ * @deprecated Starting from Magento 2.3.6 Braintree payment method core integration is deprecated
+ * in favor of official payment integration available on the marketplace
+ */
 class LocaleResolver implements ResolverInterface
 {
     /**
@@ -19,6 +25,17 @@ class LocaleResolver implements ResolverInterface
      * @var Config
      */
     private $config;
+
+    /**
+     * Mapping Magento locales on PayPal locales.
+     *
+     * @var array
+     */
+    private $localeMap = [
+        'zh_Hans_CN' => 'zh_CN',
+        'zh_Hant_HK' => 'zh_HK',
+        'zh_Hant_TW' => 'zh_TW'
+    ];
 
     /**
      * @param ResolverInterface $resolver
@@ -66,13 +83,14 @@ class LocaleResolver implements ResolverInterface
      * Gets store's locale or the `en_US` locale if store's locale does not supported by PayPal.
      *
      * @return string
+     * @see https://braintree.github.io/braintree-web/current/PayPalCheckout.html#createPayment
      */
     public function getLocale()
     {
-        $locale = $this->resolver->getLocale();
+        $locale = $this->localeMap[$this->resolver->getLocale()] ?? $this->resolver->getLocale();
         $allowedLocales = $this->config->getValue('supported_locales');
 
-        return strpos($allowedLocales, $locale) !== false ? $locale : 'en_US';
+        return strpos($allowedLocales, (string) $locale) !== false ? $locale : 'en_US';
     }
 
     /**

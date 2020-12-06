@@ -13,26 +13,31 @@ use Magento\Framework\ObjectManagerInterface;
  * Class MetadataPool
  *
  * @api
+ * @since 100.1.0
  */
 class MetadataPool
 {
     /**
      * @var ObjectManagerInterface
+     * @since 100.1.0
      */
     protected $objectManager;
 
     /**
      * @var array
+     * @since 100.1.0
      */
     protected $metadata;
 
     /**
      * @var \Magento\Framework\EntityManager\EntityMetadata[]
+     * @since 100.1.0
      */
     protected $registry;
 
     /**
      * @var SequenceFactory
+     * @since 100.1.0
      */
     protected $sequenceFactory;
 
@@ -85,6 +90,7 @@ class MetadataPool
      * @param string $entityType
      * @return EntityMetadataInterface
      * @throws \Exception
+     * @since 100.1.0
      */
     public function getMetadata($entityType)
     {
@@ -100,7 +106,8 @@ class MetadataPool
     /**
      * @param string $entityType
      * @return HydratorInterface
-     * @deprecated
+     * @deprecated 100.1.0
+     * @since 100.1.0
      */
     public function getHydrator($entityType)
     {
@@ -113,6 +120,7 @@ class MetadataPool
      *
      * @param string $entityType
      * @return bool
+     * @since 100.1.0
      */
     public function hasConfiguration($entityType)
     {

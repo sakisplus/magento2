@@ -7,6 +7,7 @@ namespace Magento\Framework\DB\Ddl;
 
 /**
  * @api
+ * @since 100.0.2
  */
 class Trigger
 {
@@ -30,11 +31,7 @@ class Trigger
 
     /**#@-*/
 
-    /**
-     * List of times available for trigger
-     *
-     * @var array
-     */
+    /**#@-*/
     protected static $listOfTimes = [self::TIME_BEFORE, self::TIME_AFTER];
 
     /**

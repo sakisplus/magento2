@@ -1,6 +1,5 @@
 <?php
 /**
- *
  * Copyright © Magento, Inc. All rights reserved.
  * See COPYING.txt for license details.
  */
@@ -11,7 +10,11 @@ use Magento\Framework\Exception\NotFoundException;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\App\RequestInterface;
 use Magento\Framework\App\Response\RedirectInterface;
+use Magento\Store\Model\ScopeInterface;
 
+/**
+ * Wishlist plugin before dispatch
+ */
 class Plugin
 {
     /**
@@ -35,21 +38,29 @@ class Plugin
     protected $redirector;
 
     /**
+     * @var \Magento\Framework\Message\ManagerInterface
+     */
+    private $messageManager;
+
+    /**
      * @param CustomerSession $customerSession
      * @param \Magento\Wishlist\Model\AuthenticationStateInterface $authenticationState
      * @param ScopeConfigInterface $config
      * @param RedirectInterface $redirector
+     * @param \Magento\Framework\Message\ManagerInterface $messageManager
      */
     public function __construct(
         CustomerSession $customerSession,
         \Magento\Wishlist\Model\AuthenticationStateInterface $authenticationState,
         ScopeConfigInterface $config,
-        RedirectInterface $redirector
+        RedirectInterface $redirector,
+        \Magento\Framework\Message\ManagerInterface $messageManager
     ) {
         $this->customerSession = $customerSession;
         $this->authenticationState = $authenticationState;
         $this->config = $config;
         $this->redirector = $redirector;
+        $this->messageManager = $messageManager;
     }
 
     /**
@@ -67,13 +78,19 @@ class Plugin
             if (!$this->customerSession->getBeforeWishlistUrl()) {
                 $this->customerSession->setBeforeWishlistUrl($this->redirector->getRefererUrl());
             }
-            $this->customerSession->setBeforeWishlistRequest($request->getParams());
+            $data = $request->getParams();
+            unset($data['login']);
+            $this->customerSession->setBeforeWishlistRequest($data);
             $this->customerSession->setBeforeRequestParams($this->customerSession->getBeforeWishlistRequest());
             $this->customerSession->setBeforeModuleName('wishlist');
             $this->customerSession->setBeforeControllerName('index');
             $this->customerSession->setBeforeAction('add');
+
+            if ($request->getActionName() == 'add') {
+                $this->messageManager->addErrorMessage(__('You must login or register to add items to your wishlist.'));
+            }
         }
-        if (!$this->config->isSetFlag('wishlist/general/active')) {
+        if (!$this->config->isSetFlag('wishlist/general/active', ScopeInterface::SCOPE_STORES)) {
             throw new NotFoundException(__('Page not found.'));
         }
     }

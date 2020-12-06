@@ -4,8 +4,6 @@
  * See COPYING.txt for license details.
  */
 
-// @codingStandardsIgnoreFile
-
 namespace Magento\Catalog\Test\Unit\Model\Product\Type;
 
 use Magento\Catalog\Api\Data\ProductTierPriceExtensionFactory;
@@ -18,7 +16,7 @@ use Magento\Customer\Model\GroupManagement;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
-class PriceTest extends \PHPUnit_Framework_TestCase
+class PriceTest extends \PHPUnit\Framework\TestCase
 {
     const KEY_TIER_PRICE = 'tier_price';
     const PRICE_SCOPE_GLOBAL = 0;
@@ -66,17 +64,12 @@ class PriceTest extends \PHPUnit_Framework_TestCase
         $this->objectManagerHelper = new ObjectManagerHelper($this);
         $this->product = $this->objectManagerHelper->getObject(\Magento\Catalog\Model\Product::class);
 
-        $this->tpFactory = $this->getMock(
+        $this->tpFactory = $this->createPartialMock(
             \Magento\Catalog\Api\Data\ProductTierPriceInterfaceFactory::class,
-            ['create'],
-            [],
-            '',
-            false,
-            false,
-            false
+            ['create']
         );
 
-        $this->websiteMock = $this->getMock(\Magento\Store\Model\Website::class, ['getId'], [], '', false);
+        $this->websiteMock = $this->createPartialMock(\Magento\Store\Model\Website::class, ['getId']);
         $storeMangerMock = $this->getMockForAbstractClass(
             \Magento\Store\Model\StoreManagerInterface::class,
             [],
@@ -100,16 +93,10 @@ class PriceTest extends \PHPUnit_Framework_TestCase
             ['getValue']
         );
 
-        $group = $this->getMock(
-            \Magento\Customer\Model\Data\Group::class,
-            [],
-            [],
-            '',
-            false
-        );
+        $group = $this->createMock(\Magento\Customer\Model\Data\Group::class);
         $group->expects($this->any())->method('getId')->willReturn(GroupManagement::CUST_GROUP_ALL);
         $this->groupManagementMock =
-            $this->getMock(\Magento\Customer\Api\GroupManagementInterface::class, [], [], '', false);
+            $this->createMock(\Magento\Customer\Api\GroupManagementInterface::class);
         $this->groupManagementMock->expects($this->any())->method('getAllCustomersGroup')
             ->will($this->returnValue($group));
         $this->tierPriceExtensionFactoryMock = $this->getMockBuilder(ProductTierPriceExtensionFactory::class)
@@ -178,9 +165,13 @@ class PriceTest extends \PHPUnit_Framework_TestCase
         $this->websiteMock->expects($this->any())->method('getId')->will($this->returnValue($expectedWebsiteId));
         $this->tpFactory->expects($this->any())
             ->method('create')
-            ->will($this->returnCallback(function () {
-                return $this->objectManagerHelper->getObject(\Magento\Catalog\Model\Product\TierPrice::class);
-            }));
+            ->will(
+                $this->returnCallback(
+                    function () {
+                        return $this->objectManagerHelper->getObject(\Magento\Catalog\Model\Product\TierPrice::class);
+                    }
+                )
+            );
 
         // create sample TierPrice objects that would be coming from a REST call
         $tierPriceExtensionMock = $this->getMockBuilder(ProductTierPriceExtensionInterface::class)
@@ -211,9 +202,10 @@ class PriceTest extends \PHPUnit_Framework_TestCase
         $tpArray = $this->product->getData($this::KEY_TIER_PRICE);
         $this->assertNotNull($tpArray);
         $this->assertTrue(is_array($tpArray));
-        $this->assertEquals(sizeof($tps), sizeof($tpArray));
+        $this->assertEquals(count($tps), count($tpArray));
 
-        for ($i = 0; $i < sizeof($tps); $i++) {
+        $count = count($tps);
+        for ($i = 0; $i < $count; $i++) {
             $tpData = $tpArray[$i];
             $this->assertEquals($expectedWebsiteId, $tpData['website_id'], 'Website Id does not match');
             $this->assertEquals($tps[$i]->getValue(), $tpData['price'], 'Price/Value does not match');
@@ -239,12 +231,13 @@ class PriceTest extends \PHPUnit_Framework_TestCase
         $tpRests = $this->model->getTierPrices($this->product);
         $this->assertNotNull($tpRests);
         $this->assertTrue(is_array($tpRests));
-        $this->assertEquals(sizeof($tps), sizeof($tpRests));
+        $this->assertEquals(count($tps), count($tpRests));
         foreach ($tpRests as $tpRest) {
             $this->assertEquals(50, $tpRest->getExtensionAttributes()->getPercentageValue());
         }
 
-        for ($i = 0; $i < sizeof($tps); $i++) {
+        $count = count($tps);
+        for ($i = 0; $i < $count; $i++) {
             $this->assertEquals(
                 $tps[$i]->getValue(),
                 $tpRests[$i]->getValue(),

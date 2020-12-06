@@ -8,7 +8,7 @@ namespace Magento\Newsletter\Test\Unit\Block\Adminhtml\Queue;
 /**
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
-class PreviewTest extends \PHPUnit_Framework_TestCase
+class PreviewTest extends \PHPUnit\Framework\TestCase
 {
     /**
      * @var \Magento\Framework\TestFramework\Unit\Helper\ObjectManager
@@ -47,23 +47,20 @@ class PreviewTest extends \PHPUnit_Framework_TestCase
 
     protected function setUp()
     {
-        $context = $this->getMock(\Magento\Backend\Block\Template\Context::class, [], [], '', false);
-        $eventManager = $this->getMock(\Magento\Framework\Event\ManagerInterface::class, [], [], '', false);
-        $context->expects($this->once())->method('getEventManager')->will($this->returnValue($eventManager));
-        $scopeConfig = $this->getMock(\Magento\Framework\App\Config\ScopeConfigInterface::class, [], [], '', false);
-        $context->expects($this->once())->method('getScopeConfig')->will($this->returnValue($scopeConfig));
-        $this->request = $this->getMock(\Magento\Framework\App\Request\Http::class, [], [], '', false);
-        $context->expects($this->once())->method('getRequest')->will($this->returnValue($this->request));
-        $this->storeManager = $this->getMock(
+        $context = $this->createMock(\Magento\Backend\Block\Template\Context::class);
+        $eventManager = $this->createMock(\Magento\Framework\Event\ManagerInterface::class);
+        $context->expects($this->once())->method('getEventManager')->willReturn($eventManager);
+        $scopeConfig = $this->createMock(\Magento\Framework\App\Config\ScopeConfigInterface::class);
+        $context->expects($this->once())->method('getScopeConfig')->willReturn($scopeConfig);
+        $this->request = $this->createMock(\Magento\Framework\App\Request\Http::class);
+        $context->expects($this->once())->method('getRequest')->willReturn($this->request);
+        $this->storeManager = $this->createPartialMock(
             \Magento\Store\Model\StoreManager::class,
-            ['getStores', 'getDefaultStoreView'],
-            [],
-            '',
-            false
+            ['getStores', 'getDefaultStoreView']
         );
-        $context->expects($this->once())->method('getStoreManager')->will($this->returnValue($this->storeManager));
-        $appState = $this->getMock(\Magento\Framework\App\State::class, [], [], '', false);
-        $context->expects($this->once())->method('getAppState')->will($this->returnValue($appState));
+        $context->expects($this->once())->method('getStoreManager')->willReturn($this->storeManager);
+        $appState = $this->createMock(\Magento\Framework\App\State::class);
+        $context->expects($this->once())->method('getAppState')->willReturn($appState);
 
         $backendSession = $this->getMockBuilder(\Magento\Backend\Model\Session::class)
             ->disableOriginalConstructor()
@@ -71,32 +68,48 @@ class PreviewTest extends \PHPUnit_Framework_TestCase
 
         $context->expects($this->once())->method('getBackendSession')->willReturn($backendSession);
 
-        $templateFactory = $this->getMock(\Magento\Newsletter\Model\TemplateFactory::class, ['create'], [], '', false);
-        $this->template = $this->getMock(\Magento\Newsletter\Model\Template::class, [], [], '', false);
-        $templateFactory->expects($this->once())->method('create')->will($this->returnValue($this->template));
-
-        $subscriberFactory = $this->getMock(
-            \Magento\Newsletter\Model\SubscriberFactory::class,
-            ['create'],
-            [],
-            '',
-            false
+        $templateFactory = $this->createPartialMock(\Magento\Newsletter\Model\TemplateFactory::class, ['create']);
+        $this->template = $this->createPartialMock(
+            \Magento\Newsletter\Model\Template::class,
+            [
+                'isPlain',
+                'setId',
+                'setTemplateType',
+                'setTemplateText',
+                'setTemplateStyles',
+            ]
         );
-        $this->subscriber = $this->getMock(\Magento\Newsletter\Model\Subscriber::class, [], [], '', false);
-        $subscriberFactory->expects($this->once())->method('create')->will($this->returnValue($this->subscriber));
+        $templateFactory->expects($this->once())->method('create')->willReturn($this->template);
 
-        $queueFactory = $this->getMock(\Magento\Newsletter\Model\QueueFactory::class, ['create'], [], '', false);
-        $this->queue = $this->getMock(\Magento\Newsletter\Model\Queue::class, ['load'], [], '', false);
-        $queueFactory->expects($this->any())->method('create')->will($this->returnValue($this->queue));
+        $subscriberFactory = $this->createPartialMock(\Magento\Newsletter\Model\SubscriberFactory::class, ['create']);
+        $this->subscriber = $this->createMock(\Magento\Newsletter\Model\Subscriber::class);
+        $subscriberFactory->expects($this->once())->method('create')->willReturn($this->subscriber);
+
+        $queueFactory = $this->createPartialMock(\Magento\Newsletter\Model\QueueFactory::class, ['create']);
+        $this->queue = $this->createPartialMock(
+            \Magento\Newsletter\Model\Queue::class,
+            [
+                'load',
+                'getTemplateId',
+                'getNewsletterType',
+                'getNewsletterText',
+                'getNewsletterStyles',
+            ]
+        );
+        $queueFactory->expects($this->any())->method('create')->willReturn($this->queue);
 
         $this->objectManager = new \Magento\Framework\TestFramework\Unit\Helper\ObjectManager($this);
+
+        $escaper = $this->objectManager->getObject(\Magento\Framework\Escaper::class);
+        $context->expects($this->once())->method('getEscaper')->willReturn($escaper);
+
         $this->preview = $this->objectManager->getObject(
             \Magento\Newsletter\Block\Adminhtml\Queue\Preview::class,
             [
                 'context' => $context,
                 'templateFactory' => $templateFactory,
                 'subscriberFactory' => $subscriberFactory,
-                'queueFactory' => $queueFactory,
+                'queueFactory' => $queueFactory
             ]
         );
     }
@@ -104,26 +117,38 @@ class PreviewTest extends \PHPUnit_Framework_TestCase
     public function testToHtmlEmpty()
     {
         /** @var \Magento\Store\Model\Store $store */
-        $store = $this->getMock(\Magento\Store\Model\Store::class, ['getId'], [], '', false);
-        $this->storeManager->expects($this->once())->method('getDefaultStoreView')->will($this->returnValue($store));
+        $store = $this->createPartialMock(\Magento\Store\Model\Store::class, ['getId']);
+        $this->storeManager->expects($this->once())->method('getDefaultStoreView')->willReturn($store);
         $result = $this->preview->toHtml();
         $this->assertEquals('', $result);
     }
 
     public function testToHtmlWithId()
     {
-        $this->request->expects($this->any())->method('getParam')->will($this->returnValueMap(
+        $templateId = 1;
+        $newsletterType = 2;
+        $newsletterText = 'newsletter text';
+        $newsletterStyle = 'style';
+        $this->request->expects($this->any())->method('getParam')->willReturnMap(
             [
                 ['id', null, 1],
-                ['store_id', null, 0]
+                ['store_id', null, 0],
             ]
-        ));
-        $this->queue->expects($this->once())->method('load')->will($this->returnSelf());
-        $this->template->expects($this->any())->method('isPlain')->will($this->returnValue(true));
+        );
+        $this->queue->expects($this->once())->method('load')->willReturnSelf();
+        $this->queue->expects($this->once())->method('getTemplateId')->willReturn($templateId);
+        $this->queue->expects($this->once())->method('getNewsletterType')->willReturn($newsletterType);
+        $this->queue->expects($this->once())->method('getNewsletterText')->willReturn($newsletterText);
+        $this->queue->expects($this->once())->method('getNewsletterStyles')->willReturn($newsletterStyle);
+        $this->template->expects($this->any())->method('isPlain')->willReturn(true);
+        $this->template->expects($this->once())->method('setId')->willReturn($templateId);
+        $this->template->expects($this->once())->method('setTemplateType')->willReturn($newsletterType);
+        $this->template->expects($this->once())->method('setTemplateText')->willReturn($newsletterText);
+        $this->template->expects($this->once())->method('setTemplateStyles')->willReturn($newsletterStyle);
         /** @var \Magento\Store\Model\Store $store */
-        $this->storeManager->expects($this->once())->method('getDefaultStoreView')->will($this->returnValue(null));
-        $store = $this->getMock(\Magento\Store\Model\Store::class, ['getId'], [], '', false);
-        $this->storeManager->expects($this->once())->method('getStores')->will($this->returnValue([0 => $store]));
+        $this->storeManager->expects($this->once())->method('getDefaultStoreView')->willReturn(null);
+        $store = $this->createPartialMock(\Magento\Store\Model\Store::class, ['getId']);
+        $this->storeManager->expects($this->once())->method('getStores')->willReturn([0 => $store]);
         $result = $this->preview->toHtml();
         $this->assertEquals('<pre></pre>', $result);
     }

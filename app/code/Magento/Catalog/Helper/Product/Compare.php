@@ -14,6 +14,8 @@ use Magento\Catalog\Model\ResourceModel\Product\Compare\Item\Collection;
  * @api
  * @SuppressWarnings(PHPMD.LongVariable)
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @SuppressWarnings(PHPMD.CookieAndSessionMisuse)
+ * @since 100.0.2
  */
 class Compare extends \Magento\Framework\Url\Helper\Data
 {
@@ -95,7 +97,9 @@ class Compare extends \Magento\Framework\Url\Helper\Data
      */
     protected $postHelper;
 
-    /** @var \Magento\Store\Model\StoreManagerInterface */
+    /**
+     * @var \Magento\Store\Model\StoreManagerInterface
+     */
     private $_storeManager;
 
     /**
@@ -142,16 +146,9 @@ class Compare extends \Magento\Framework\Url\Helper\Data
      */
     public function getListUrl()
     {
-        $itemIds = [];
-        foreach ($this->getItemCollection() as $item) {
-            $itemIds[] = $item->getId();
-        }
-
         $params = [
-            'items' => implode(',', $itemIds),
             \Magento\Framework\App\ActionInterface::PARAM_NAME_URL_ENCODED => $this->getEncodedUrl()
         ];
-
         return $this->_getUrl('catalog/product_compare', $params);
     }
 
@@ -163,7 +160,15 @@ class Compare extends \Magento\Framework\Url\Helper\Data
      */
     public function getPostDataParams($product)
     {
-        return $this->postHelper->getPostData($this->getAddUrl(), ['product' => $product->getId()]);
+        $params = ['product' => $product->getId()];
+        $requestingPageUrl = $this->_getRequest()->getParam('requesting_page_url');
+
+        if (!empty($requestingPageUrl)) {
+            $encodedUrl = $this->urlEncoder->encode($requestingPageUrl);
+            $params[\Magento\Framework\App\ActionInterface::PARAM_NAME_URL_ENCODED] = $encodedUrl;
+        }
+
+        return $this->postHelper->getPostData($this->getAddUrl(), $params);
     }
 
     /**

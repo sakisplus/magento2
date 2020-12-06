@@ -6,11 +6,13 @@
 namespace Magento\Bundle\Test\Unit\Block\Catalog\Product\View\Type;
 
 use Magento\Bundle\Block\Catalog\Product\View\Type\Bundle as BundleBlock;
+use Magento\Catalog\Block\Product\Context;
+use \Magento\Framework\Escaper;
 
 /**
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
-class BundleTest extends \PHPUnit_Framework_TestCase
+class BundleTest extends \PHPUnit\Framework\TestCase
 {
     /**
      * @var \Magento\Bundle\Model\Product\PriceFactory|\PHPUnit_Framework_MockObject_MockObject
@@ -42,10 +44,18 @@ class BundleTest extends \PHPUnit_Framework_TestCase
      */
     private $bundleBlock;
 
+    /**
+     * @var \Magento\Framework\Escaper|\PHPUnit_Framework_MockObject_MockObject
+     */
+    private $escaper;
+
+    /** @var \Magento\Catalog\Block\Product\Context|\PHPUnit_Framework_MockObject_MockObject */
+    protected $context;
+
     protected function setUp()
     {
         $objectHelper = new \Magento\Framework\TestFramework\Unit\Helper\ObjectManager($this);
-
+        $this->context = $this->createPartialMock(Context::class, ['getEscaper', 'getRegistry', 'getEventManager']);
         $this->bundleProductPriceFactory = $this->getMockBuilder(\Magento\Bundle\Model\Product\PriceFactory::class)
             ->disableOriginalConstructor()
             ->setMethods(['create'])
@@ -79,15 +89,23 @@ class BundleTest extends \PHPUnit_Framework_TestCase
         $this->catalogProduct = $this->getMockBuilder(\Magento\Catalog\Helper\Product::class)
             ->disableOriginalConstructor()
             ->getMock();
+
+        $this->escaper = $objectHelper->getObject(Escaper::class);
+
+        $this->context->expects($this->once())->method('getRegistry')->willReturn($registry);
+        $this->context->expects($this->once())->method('getEscaper')->willReturn($this->escaper);
+        $this->context->expects($this->once())->method('getEventManager')->willReturn($this->eventManager);
+
         /** @var $bundleBlock BundleBlock */
         $this->bundleBlock = $objectHelper->getObject(
             \Magento\Bundle\Block\Catalog\Product\View\Type\Bundle::class,
             [
+                'context'=> $this->context,
                 'registry' => $registry,
                 'eventManager' => $this->eventManager,
                 'jsonEncoder' => $this->jsonEncoder,
                 'productPrice' => $this->bundleProductPriceFactory,
-                'catalogProduct' => $this->catalogProduct
+                'catalogProduct' => $this->catalogProduct,
             ]
         );
 
@@ -108,6 +126,7 @@ class BundleTest extends \PHPUnit_Framework_TestCase
             ->disableOriginalConstructor()
             ->getMock();
         $option->expects($this->any())->method('getType')->willReturn('checkbox');
+        $expected='There is no defined renderer for &quot;checkbox&quot; option type.';
 
         $layout = $this->getMockBuilder(\Magento\Framework\View\Layout::class)
             ->setMethods(['getChildName', 'getBlock'])
@@ -115,9 +134,8 @@ class BundleTest extends \PHPUnit_Framework_TestCase
             ->getMock();
         $layout->expects($this->any())->method('getChildName')->willReturn(false);
         $this->bundleBlock->setLayout($layout);
-
         $this->assertEquals(
-            'There is no defined renderer for "checkbox" option type.',
+            $expected,
             $this->bundleBlock->getOptionHtml($option)
         );
     }
@@ -198,7 +216,7 @@ class BundleTest extends \PHPUnit_Framework_TestCase
                 [
                     ['price' => new \Magento\Framework\DataObject(
                         ['base_amount' => $baseAmount, 'value' => $basePriceValue]
-                    )]
+                    )],
                 ],
                 true,
                 true
@@ -244,12 +262,14 @@ class BundleTest extends \PHPUnit_Framework_TestCase
                 ),
             ]
         );
+        $bundleOptionPriceMock = $this->getAmountPriceMock(
+            $baseAmount,
+            $regularPriceMock,
+            [['item' => $selections[0], 'value' => $basePriceValue, 'base_amount' => 321321]]
+        );
         $prices = [
-            'bundle_option' => $this->getAmountPriceMock(
-                $baseAmount,
-                $regularPriceMock,
-                [['item' => $selections[0], 'value' => $basePriceValue, 'base_amount' => 321321]]
-            ),
+            'bundle_option' => $bundleOptionPriceMock,
+            'bundle_option_regular_price' => $bundleOptionPriceMock,
             \Magento\Catalog\Pricing\Price\FinalPrice::PRICE_CODE => $finalPriceMock,
             \Magento\Catalog\Pricing\Price\RegularPrice::PRICE_CODE => $regularPriceMock,
         ];
@@ -261,8 +281,8 @@ class BundleTest extends \PHPUnit_Framework_TestCase
         $preconfiguredValues = new \Magento\Framework\DataObject(
             [
                 'bundle_option' => [
-                    1 => 123123111
-                ]
+                    1 => 123123111,
+                ],
             ]
         );
         $this->product->expects($this->once())
@@ -278,6 +298,7 @@ class BundleTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals(110, $jsonConfig['prices']['oldPrice']['amount']);
         $this->assertEquals(100, $jsonConfig['prices']['basePrice']['amount']);
         $this->assertEquals(100, $jsonConfig['prices']['finalPrice']['amount']);
+        $this->assertEquals([1], $jsonConfig['positions']);
     }
 
     /**
@@ -328,6 +349,10 @@ class BundleTest extends \PHPUnit_Framework_TestCase
             ->will($this->returnArgument(0));
     }
 
+    /**
+     * @param $price
+     * @return \PHPUnit_Framework_MockObject_MockObject
+     */
     private function getPriceInfoMock($price)
     {
         $priceInfoMock = $this->getMockBuilder(\Magento\Framework\Pricing\PriceInfo\Base::class)
@@ -352,6 +377,10 @@ class BundleTest extends \PHPUnit_Framework_TestCase
         return $priceInfoMock;
     }
 
+    /**
+     * @param $prices
+     * @return \PHPUnit_Framework_MockObject_MockObject
+     */
     private function getPriceMock($prices)
     {
         $methods = [];
@@ -461,6 +490,17 @@ class BundleTest extends \PHPUnit_Framework_TestCase
         $isSalable = true
     ) {
         $selection = $this->getMockBuilder(\Magento\Catalog\Model\Product::class)
+            ->setMethods(
+                [
+                    'getSelectionId',
+                    'getName',
+                    'getSelectionQty',
+                    'getPriceInfo',
+                    'getSelectionCanChangeQty',
+                    'getIsDefault',
+                    'isSalable'
+                ]
+            )
             ->disableOriginalConstructor()
             ->getMock();
         $tierPrice = $this->getMockBuilder(\Magento\Bundle\Pricing\Price\TierPrice::class)
@@ -514,7 +554,7 @@ class BundleTest extends \PHPUnit_Framework_TestCase
             ->willReturn($selectionConnection);
         $this->product->expects($this->any())
             ->method('getTypeInstance')->willReturn($typeInstance);
-        $this->product->expects($this->any())->method('getStoreId')  ->willReturn(0);
+        $this->product->expects($this->any())->method('getStoreId')->willReturn(0);
         $this->catalogProduct->expects($this->once())->method('getSkipSaleableCheck')->willReturn(true);
 
         $this->assertEquals($newOptions, $this->bundleBlock->getOptions($stripSelection));

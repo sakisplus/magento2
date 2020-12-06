@@ -8,8 +8,10 @@ namespace Magento\CatalogSearch\Model\Search\BaseSelectStrategy;
 use Magento\CatalogSearch\Model\Search\SelectContainer\SelectContainer;
 
 /**
- * Interface BaseSelectStrategyInterface
  * This interface represents strategy that will be used to create base select for search request
+ *
+ * @deprecated 101.0.0
+ * @see \Magento\ElasticSearch
  */
 interface BaseSelectStrategyInterface
 {

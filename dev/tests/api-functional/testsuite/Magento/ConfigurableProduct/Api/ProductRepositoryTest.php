@@ -254,7 +254,6 @@ class ProductRepositoryTest extends WebapiAbstract
         $this->assertEquals([$productId1], $resultConfigurableProductLinks);
 
         //adding back the product links, the option value should be restored
-        unset($response[ExtensibleDataInterface::EXTENSION_ATTRIBUTES_KEY]['configurable_product_options']);
         $response[ExtensibleDataInterface::EXTENSION_ATTRIBUTES_KEY]['configurable_product_links']
             = [$productId1, $productId2];
         //set the value for required attribute
@@ -265,6 +264,7 @@ class ProductRepositoryTest extends WebapiAbstract
         ];
 
         $response = $this->saveProduct($response);
+
         $currentOptions = $response[ExtensibleDataInterface::EXTENSION_ATTRIBUTES_KEY]['configurable_product_options'];
 
         $this->assertEquals($options, $currentOptions);
@@ -285,7 +285,7 @@ class ProductRepositoryTest extends WebapiAbstract
             $productId1, $nonExistingId
         ];
 
-        $expectedMessage = 'Unable to save product';
+        $expectedMessage = 'Product with id "%1" does not exist.';
         try {
             $this->saveProduct($response);
             $this->fail("Expected exception");
@@ -361,7 +361,7 @@ class ProductRepositoryTest extends WebapiAbstract
             $productId1, $productId2
         ];
 
-        $expectedMessage = 'Unable to save product';
+        $expectedMessage = 'Product with id "%1" does not exist.';
         try {
             $this->saveProduct($response);
             $this->fail("Expected exception");
@@ -460,6 +460,16 @@ class ProductRepositoryTest extends WebapiAbstract
      */
     protected function saveProduct($product)
     {
+        if (isset($product['custom_attributes'])) {
+            $count = count($product['custom_attributes']);
+            for ($i=0; $i < $count; $i++) {
+                if ($product['custom_attributes'][$i]['attribute_code'] == 'category_ids'
+                    && !is_array($product['custom_attributes'][$i]['value'])
+                ) {
+                    $product['custom_attributes'][$i]['value'] = [""];
+                }
+            }
+        }
         $resourcePath = self::RESOURCE_PATH . '/' . $product['sku'];
         $serviceInfo = [
             'rest' => [

@@ -9,6 +9,7 @@ namespace Magento\Cms\Block\Adminhtml\Wysiwyg\Images\Content;
  * Uploader block for Wysiwyg Images
  *
  * @api
+ * @since 100.0.2
  */
 class Uploader extends \Magento\Backend\Block\Media\Uploader
 {
@@ -34,6 +35,8 @@ class Uploader extends \Magento\Backend\Block\Media\Uploader
     }
 
     /**
+     * Constructor
+     *
      * @return void
      */
     protected function _construct()
@@ -48,7 +51,7 @@ class Uploader extends \Magento\Backend\Block\Media\Uploader
             $files[] = '*.' . $ext;
         }
         $this->getConfig()->setUrl(
-            $this->_urlBuilder->addSessionParam()->getUrl('cms/*/upload', ['type' => $type])
+            $this->_urlBuilder->getUrl('cms/*/upload', ['type' => $type])
         )->setFileField(
             'image'
         )->setFilters(

@@ -5,9 +5,12 @@
  */
 namespace Magento\Bundle\Model\ResourceModel\Option;
 
+use Magento\Catalog\Model\Product\Attribute\Source\Status;
+
 /**
  * Bundle Options Resource Collection
  * @api
+ * @since 100.0.2
  */
 class Collection extends \Magento\Framework\Model\ResourceModel\Db\Collection\AbstractCollection
 {
@@ -113,6 +116,7 @@ class Collection extends \Magento\Framework\Model\ResourceModel\Db\Collection\Ab
      * @param int $productLinkFieldValue
      *
      * @return $this
+     * @since 100.1.0
      */
     public function setProductLinkFilter($productLinkFieldValue)
     {
@@ -136,12 +140,10 @@ class Collection extends \Magento\Framework\Model\ResourceModel\Db\Collection\Ab
 
     /**
      * Append selection to options
-     * stripBefore - indicates to reload
-     * appendAll - indicates do we need to filter by saleable and required custom options
      *
      * @param \Magento\Bundle\Model\ResourceModel\Selection\Collection $selectionsCollection
-     * @param bool $stripBefore
-     * @param bool $appendAll
+     * @param bool $stripBefore indicates to reload
+     * @param bool $appendAll indicates do we need to filter by saleable and required custom options
      * @return \Magento\Framework\DataObject[]
      */
     public function appendSelections($selectionsCollection, $stripBefore = false, $appendAll = true)
@@ -154,7 +156,9 @@ class Collection extends \Magento\Framework\Model\ResourceModel\Db\Collection\Ab
             foreach ($selectionsCollection->getItems() as $key => $selection) {
                 $option = $this->getItemById($selection->getOptionId());
                 if ($option) {
-                    if ($appendAll || $selection->isSalable() && !$selection->getRequiredOptions()) {
+                    if ($appendAll ||
+                        ((int) $selection->getStatus()) === Status::STATUS_ENABLED && !$selection->getRequiredOptions()
+                    ) {
                         $selection->setOption($option);
                         $option->addSelection($selection);
                     } else {

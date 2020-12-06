@@ -9,6 +9,7 @@ namespace Magento\Framework\Setup;
  * DB resource interface
  *
  * @api
+ * @since 100.0.2
  */
 interface SetupInterface
 {
@@ -41,6 +42,7 @@ interface SetupInterface
      *
      * @param string $tableName
      * @return string
+     * @since 100.1.0
      */
     public function getTablePlaceholder($tableName);
 

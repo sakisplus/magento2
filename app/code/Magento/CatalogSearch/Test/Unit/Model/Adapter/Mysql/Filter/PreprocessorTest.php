@@ -15,8 +15,10 @@ use PHPUnit_Framework_MockObject_MockObject as MockObject;
 
 /**
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @deprecated
+ * @see \Magento\ElasticSearch
  */
-class PreprocessorTest extends \PHPUnit_Framework_TestCase
+class PreprocessorTest extends \PHPUnit\Framework\TestCase
 {
     /**
      * @var AliasResolver|\PHPUnit_Framework_MockObject_MockObject
@@ -127,7 +129,7 @@ class PreprocessorTest extends \PHPUnit_Framework_TestCase
             ->getMock();
         $this->connection = $this->getMockBuilder(\Magento\Framework\DB\Adapter\AdapterInterface::class)
             ->disableOriginalConstructor()
-            ->setMethods(['select', 'getIfNullSql', 'quote'])
+            ->setMethods(['select', 'getIfNullSql', 'quote', 'quoteInto'])
             ->getMockForAbstractClass();
         $this->select = $this->getMockBuilder(\Magento\Framework\DB\Select::class)
             ->disableOriginalConstructor()
@@ -220,9 +222,10 @@ class PreprocessorTest extends \PHPUnit_Framework_TestCase
     public function processCategoryIdsDataProvider()
     {
         return [
-            ['5', 'category_ids_index.category_id = 5'],
-            [3, 'category_ids_index.category_id = 3'],
-            ["' and 1 = 0", 'category_ids_index.category_id = 0'],
+            ['5', "category_ids_index.category_id in ('5')"],
+            [3, "category_ids_index.category_id in (3)"],
+            ["' and 1 = 0", "category_ids_index.category_id in ('\' and 1 = 0')"],
+            [['5', '10'], "category_ids_index.category_id in ('5', '10')"]
         ];
     }
 
@@ -248,6 +251,12 @@ class PreprocessorTest extends \PHPUnit_Framework_TestCase
             ->method('getAttribute')
             ->with(\Magento\Catalog\Model\Product::ENTITY, 'category_ids')
             ->will($this->returnValue($this->attribute));
+
+        $this->connection
+            ->expects($this->once())
+            ->method('quoteInto')
+            ->with('category_ids_index.category_id in (?)', $categoryId)
+            ->willReturn($expectedResult);
 
         $actualResult = $this->target->process($this->filter, $isNegation, $query);
         $this->assertSame($expectedResult, $this->removeWhitespaces($actualResult));
@@ -314,6 +323,9 @@ class PreprocessorTest extends \PHPUnit_Framework_TestCase
         $this->assertSame($expected, $this->removeWhitespaces($actualResult));
     }
 
+    /**
+     * @return array
+     */
     public function testTermFilterDataProvider()
     {
         return [
@@ -438,6 +450,7 @@ class PreprocessorTest extends \PHPUnit_Framework_TestCase
     {
         $query = 'static_attribute LIKE %name%';
         $expected = 'search_index.entity_id IN (select entity_id from () as filter)';
+
         $this->filter->expects($this->any())
             ->method('getField')
             ->willReturn('termField');

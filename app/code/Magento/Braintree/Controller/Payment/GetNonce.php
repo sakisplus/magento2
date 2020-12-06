@@ -16,6 +16,9 @@ use Psr\Log\LoggerInterface;
 
 /**
  * Class GetNonce
+ *
+ * @deprecated Starting from Magento 2.3.6 Braintree payment method core integration is deprecated
+ * in favor of official payment integration available on the marketplace
  */
 class GetNonce extends Action
 {
@@ -62,7 +65,10 @@ class GetNonce extends Action
         try {
             $publicHash = $this->getRequest()->getParam('public_hash');
             $customerId = $this->session->getCustomerId();
-            $result = $this->command->execute(['public_hash' => $publicHash, 'customer_id' => $customerId])->get();
+            $result = $this->command->execute(
+                ['public_hash' => $publicHash, 'customer_id' => $customerId, 'store_id' => $this->session->getStoreId()]
+            )
+                ->get();
             $response->setData(['paymentMethodNonce' => $result['paymentMethodNonce']]);
         } catch (\Exception $e) {
             $this->logger->critical($e);

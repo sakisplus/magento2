@@ -15,6 +15,7 @@ use Magento\Framework\ObjectManager\Helper\Composite as CompositeHelper;
  * Instead, it will try to find the first suitable child and return its result.
  *
  * @api
+ * @since 100.0.2
  */
 class CompositeUserContext implements \Magento\Authorization\Model\UserContextInterface
 {
@@ -55,7 +56,7 @@ class CompositeUserContext implements \Magento\Authorization\Model\UserContextIn
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritDoc
      */
     public function getUserId()
     {
@@ -63,7 +64,7 @@ class CompositeUserContext implements \Magento\Authorization\Model\UserContextIn
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritDoc
      */
     public function getUserType()
     {
@@ -77,7 +78,7 @@ class CompositeUserContext implements \Magento\Authorization\Model\UserContextIn
      */
     protected function getUserContext()
     {
-        if ($this->chosenUserContext === null) {
+        if (!$this->chosenUserContext) {
             /** @var UserContextInterface $userContext */
             foreach ($this->userContexts as $userContext) {
                 if ($userContext->getUserType() && $userContext->getUserId() !== null) {

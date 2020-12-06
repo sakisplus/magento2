@@ -3,10 +3,14 @@
  * Copyright © Magento, Inc. All rights reserved.
  * See COPYING.txt for license details.
  */
+
+declare(strict_types=1);
+
 namespace Magento\Sales\Model\Order\Pdf;
 
 /**
  * Sales Order Creditmemo PDF model
+ *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
 class Creditmemo extends AbstractPdf
@@ -15,6 +19,11 @@ class Creditmemo extends AbstractPdf
      * @var \Magento\Store\Model\StoreManagerInterface
      */
     protected $_storeManager;
+
+    /**
+     * @var \Magento\Store\Model\App\Emulation
+     */
+    private $appEmulation;
 
     /**
      * @param \Magento\Payment\Helper\Data $paymentData
@@ -28,7 +37,7 @@ class Creditmemo extends AbstractPdf
      * @param \Magento\Framework\Translate\Inline\StateInterface $inlineTranslation
      * @param \Magento\Sales\Model\Order\Address\Renderer $addressRenderer
      * @param \Magento\Store\Model\StoreManagerInterface $storeManager
-     * @param \Magento\Framework\Locale\ResolverInterface $localeResolver
+     * @param \Magento\Store\Model\App\Emulation|null $appEmulation
      * @param array $data
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList)
@@ -46,11 +55,11 @@ class Creditmemo extends AbstractPdf
         \Magento\Framework\Translate\Inline\StateInterface $inlineTranslation,
         \Magento\Sales\Model\Order\Address\Renderer $addressRenderer,
         \Magento\Store\Model\StoreManagerInterface $storeManager,
-        \Magento\Framework\Locale\ResolverInterface $localeResolver,
+        \Magento\Store\Model\App\Emulation $appEmulation,
         array $data = []
     ) {
         $this->_storeManager = $storeManager;
-        $this->_localeResolver = $localeResolver;
+        $this->appEmulation = $appEmulation;
         parent::__construct(
             $paymentData,
             $string,
@@ -75,12 +84,12 @@ class Creditmemo extends AbstractPdf
     protected function _drawHeader(\Zend_Pdf_Page $page)
     {
         $this->_setFontRegular($page, 10);
-        $page->setFillColor(new \Zend_Pdf_Color_RGB(0.93, 0.92, 0.92));
+        $page->setFillColor(new \Zend_Pdf_Color_Rgb(0.93, 0.92, 0.92));
         $page->setLineColor(new \Zend_Pdf_Color_GrayScale(0.5));
         $page->setLineWidth(0.5);
         $page->drawRectangle(25, $this->y, 570, $this->y - 30);
         $this->y -= 10;
-        $page->setFillColor(new \Zend_Pdf_Color_RGB(0, 0, 0));
+        $page->setFillColor(new \Zend_Pdf_Color_Rgb(0, 0, 0));
 
         //columns headers
         $lines[0][] = ['text' => __('Products'), 'feed' => 35];
@@ -146,7 +155,11 @@ class Creditmemo extends AbstractPdf
 
         foreach ($creditmemos as $creditmemo) {
             if ($creditmemo->getStoreId()) {
-                $this->_localeResolver->emulate($creditmemo->getStoreId());
+                $this->appEmulation->startEnvironmentEmulation(
+                    $creditmemo->getStoreId(),
+                    \Magento\Framework\App\Area::AREA_FRONTEND,
+                    true
+                );
                 $this->_storeManager->setCurrentStore($creditmemo->getStoreId());
             }
             $page = $this->newPage();
@@ -180,11 +193,11 @@ class Creditmemo extends AbstractPdf
             }
             /* Add totals */
             $this->insertTotals($page, $creditmemo);
+            if ($creditmemo->getStoreId()) {
+                $this->appEmulation->stopEnvironmentEmulation();
+            }
         }
         $this->_afterGetPdf();
-        if ($creditmemo->getStoreId()) {
-            $this->_localeResolver->revert();
-        }
         return $pdf;
     }
 

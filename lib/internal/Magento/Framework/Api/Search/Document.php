@@ -9,6 +9,7 @@ use Magento\Framework\Api\AbstractSimpleObject;
 
 /**
  * @api
+ * @since 100.0.2
  */
 class Document extends AbstractSimpleObject implements DocumentInterface, \IteratorAggregate
 {
@@ -33,9 +34,7 @@ class Document extends AbstractSimpleObject implements DocumentInterface, \Itera
      */
     public function getCustomAttribute($attributeCode)
     {
-        return isset($this->_data[self::CUSTOM_ATTRIBUTES][$attributeCode])
-            ? $this->_data[self::CUSTOM_ATTRIBUTES][$attributeCode]
-            : null;
+        return $this->_data[self::CUSTOM_ATTRIBUTES][$attributeCode] ?? null;
     }
 
     /**
@@ -69,6 +68,7 @@ class Document extends AbstractSimpleObject implements DocumentInterface, \Itera
      * Implementation of \IteratorAggregate::getIterator()
      *
      * @return \ArrayIterator
+     * @since 100.1.0
      */
     public function getIterator()
     {

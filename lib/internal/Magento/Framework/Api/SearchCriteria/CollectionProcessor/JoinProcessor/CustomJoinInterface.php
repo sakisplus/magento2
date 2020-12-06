@@ -9,6 +9,7 @@ use Magento\Framework\Data\Collection\AbstractDb;
 
 /**
  * @api
+ * @since 101.0.0
  */
 interface CustomJoinInterface
 {
@@ -17,6 +18,7 @@ interface CustomJoinInterface
      *
      * @param AbstractDb $collection
      * @return bool
+     * @since 101.0.0
      */
     public function apply(AbstractDb $collection);
 }

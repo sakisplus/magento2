@@ -10,12 +10,15 @@ use Magento\CatalogInventory\Model\StockRegistry;
 use Magento\Directory\Helper\Data;
 use Magento\Directory\Model\Country;
 use Magento\Directory\Model\CountryFactory;
+use Magento\Directory\Model\Currency;
 use Magento\Directory\Model\CurrencyFactory;
 use Magento\Directory\Model\RegionFactory;
 use Magento\Fedex\Model\Carrier;
 use Magento\Framework\App\Config\ScopeConfigInterface;
+use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Module\Dir\Reader;
 use Magento\Framework\Pricing\PriceCurrencyInterface;
+use Magento\Framework\Serialize\Serializer\Json;
 use Magento\Framework\TestFramework\Unit\Helper\ObjectManager;
 use Magento\Framework\Xml\Security;
 use Magento\Quote\Model\Quote\Address\RateRequest;
@@ -42,7 +45,7 @@ use Psr\Log\LoggerInterface;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
-class CarrierTest extends \PHPUnit_Framework_TestCase
+class CarrierTest extends \PHPUnit\Framework\TestCase
 {
     /**
      * @var ObjectManager
@@ -87,12 +90,22 @@ class CarrierTest extends \PHPUnit_Framework_TestCase
     /**
      * @var \SoapClient|MockObject
      */
-    private $soapClientMock;
+    private $soapClient;
 
     /**
-     * @var \Magento\Framework\Serialize\Serializer\Json|MockObject
+     * @var Json|MockObject
      */
     private $serializer;
+
+    /**
+     * @var LoggerInterface|MockObject
+     */
+    private $logger;
+
+    /**
+     * @var CurrencyFactory|MockObject
+     */
+    private $currencyFactory;
 
     protected function setUp()
     {
@@ -135,7 +148,7 @@ class CarrierTest extends \PHPUnit_Framework_TestCase
             ->disableOriginalConstructor()
             ->getMock();
 
-        $currencyFactory = $this->getMockBuilder(CurrencyFactory::class)
+        $this->currencyFactory = $this->getMockBuilder(CurrencyFactory::class)
             ->disableOriginalConstructor()
             ->getMock();
 
@@ -151,9 +164,11 @@ class CarrierTest extends \PHPUnit_Framework_TestCase
             ->disableOriginalConstructor()
             ->getMock();
 
-        $this->serializer = $this->getMockBuilder(\Magento\Framework\Serialize\Serializer\Json::class)
+        $this->serializer = $this->getMockBuilder(Json::class)
             ->disableOriginalConstructor()
             ->getMock();
+
+        $this->logger = $this->getMockForAbstractClass(LoggerInterface::class);
 
         $this->carrier = $this->getMockBuilder(Carrier::class)
             ->setMethods(['_createSoapClient'])
@@ -161,7 +176,7 @@ class CarrierTest extends \PHPUnit_Framework_TestCase
                 [
                     'scopeConfig' => $this->scope,
                     'rateErrorFactory' => $this->errorFactory,
-                    'logger' => $this->getMock(LoggerInterface::class),
+                    'logger' => $this->logger,
                     'xmlSecurity' => new Security(),
                     'xmlElFactory' => $elementFactory,
                     'rateFactory' => $rateFactory,
@@ -171,7 +186,7 @@ class CarrierTest extends \PHPUnit_Framework_TestCase
                     'trackStatusFactory' => $this->statusFactory,
                     'regionFactory' => $regionFactory,
                     'countryFactory' => $countryFactory,
-                    'currencyFactory' => $currencyFactory,
+                    'currencyFactory' => $this->currencyFactory,
                     'directoryData' => $data,
                     'stockRegistry' => $stockRegistry,
                     'storeManager' => $storeManager,
@@ -181,12 +196,12 @@ class CarrierTest extends \PHPUnit_Framework_TestCase
                     'serializer' => $this->serializer,
                 ]
             )->getMock();
-        $this->soapClientMock = $this->getMockBuilder(\SoapClient::class)
+        $this->soapClient = $this->getMockBuilder(\SoapClient::class)
             ->disableOriginalConstructor()
             ->setMethods(['getRates', 'track'])
             ->getMock();
         $this->carrier->method('_createSoapClient')
-            ->willReturn($this->soapClientMock);
+            ->willReturn($this->soapClient);
     }
 
     public function testSetRequestWithoutCity()
@@ -214,32 +229,39 @@ class CarrierTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
-     * Callback function, emulates getValue function
-     * @param $path
-     * @return null|string
+     * Callback function, emulates getValue function.
+     *
+     * @param string $path
+     * @return string|null
      */
-    public function scopeConfigGetValue($path)
+    public function scopeConfigGetValue(string $path)
     {
-        switch ($path) {
-            case 'carriers/fedex/showmethod':
-                return 1;
-                break;
-            case 'carriers/fedex/allowed_methods':
-                return 'ServiceType';
-                break;
-        }
-        return null;
+        $pathMap = [
+            'carriers/fedex/showmethod' => 1,
+            'carriers/fedex/allowed_methods' => 'ServiceType',
+            'carriers/fedex/debug' => 1,
+        ];
+
+        return isset($pathMap[$path]) ? $pathMap[$path] : null;
     }
 
     /**
      * @param float $amount
+     * @param string $currencyCode
+     * @param string $baseCurrencyCode
      * @param string $rateType
      * @param float $expected
      * @param int $callNum
      * @dataProvider collectRatesDataProvider
      */
-    public function testCollectRatesRateAmountOriginBased($amount, $rateType, $expected, $callNum = 1)
-    {
+    public function testCollectRatesRateAmountOriginBased(
+        $amount,
+        $currencyCode,
+        $baseCurrencyCode,
+        $rateType,
+        $expected,
+        $callNum = 1
+    ) {
         $this->scope->expects($this->any())
             ->method('isSetFlag')
             ->willReturn(true);
@@ -247,6 +269,7 @@ class CarrierTest extends \PHPUnit_Framework_TestCase
         // @codingStandardsIgnoreStart
         $netAmount = new \stdClass();
         $netAmount->Amount = $amount;
+        $netAmount->Currency = $currencyCode;
 
         $totalNetCharge = new \stdClass();
         $totalNetCharge->TotalNetCharge = $netAmount;
@@ -267,11 +290,41 @@ class CarrierTest extends \PHPUnit_Framework_TestCase
         $this->serializer->method('serialize')
             ->willReturn('CollectRateString' . $amount);
 
-        $request = $this->getMockBuilder(RateRequest::class)
+        $rateCurrency = $this->getMockBuilder(Currency::class)
             ->disableOriginalConstructor()
             ->getMock();
+        $rateCurrency->method('load')
+            ->willReturnSelf();
+        $rateCurrency->method('getAnyRate')
+            ->willReturnMap(
+                [
+                    ['USD', 1],
+                    ['EUR', 0.75],
+                    ['UNKNOWN', false]
+                ]
+            );
 
-        $this->soapClientMock->expects($this->exactly($callNum))
+        if ($baseCurrencyCode === 'UNKNOWN') {
+            $this->expectException(LocalizedException::class);
+        }
+
+        $this->currencyFactory->method('create')
+            ->willReturn($rateCurrency);
+
+        $baseCurrency = $this->getMockBuilder(Currency::class)
+            ->disableOriginalConstructor()
+            ->getMock();
+        $baseCurrency->method('getCode')
+            ->willReturn($baseCurrencyCode);
+
+        $request = $this->getMockBuilder(RateRequest::class)
+            ->setMethods(['getBaseCurrency'])
+            ->disableOriginalConstructor()
+            ->getMock();
+        $request->method('getBaseCurrency')
+            ->willReturn($baseCurrency);
+
+        $this->soapClient->expects($this->exactly($callNum))
             ->method('getRates')
             ->willReturn($response);
 
@@ -288,22 +341,24 @@ class CarrierTest extends \PHPUnit_Framework_TestCase
     public function collectRatesDataProvider()
     {
         return [
-            [10.0, 'RATED_ACCOUNT_PACKAGE', 10],
-            [10.0, 'RATED_ACCOUNT_PACKAGE', 10, 0],
-            [11.50, 'PAYOR_ACCOUNT_PACKAGE', 11.5],
-            [11.50, 'PAYOR_ACCOUNT_PACKAGE', 11.5, 0],
-            [100.01, 'RATED_ACCOUNT_SHIPMENT', 100.01],
-            [100.01, 'RATED_ACCOUNT_SHIPMENT', 100.01, 0],
-            [32.2, 'PAYOR_ACCOUNT_SHIPMENT', 32.2],
-            [32.2, 'PAYOR_ACCOUNT_SHIPMENT', 32.2, 0],
-            [15.0, 'RATED_LIST_PACKAGE', 15],
-            [15.0, 'RATED_LIST_PACKAGE', 15, 0],
-            [123.25, 'PAYOR_LIST_PACKAGE', 123.25],
-            [123.25, 'PAYOR_LIST_PACKAGE', 123.25, 0],
-            [12.12, 'RATED_LIST_SHIPMENT', 12.12],
-            [12.12, 'RATED_LIST_SHIPMENT', 12.12, 0],
-            [38.9, 'PAYOR_LIST_SHIPMENT', 38.9],
-            [38.9, 'PAYOR_LIST_SHIPMENT', 38.9, 0],
+            [10.0, 'USD', 'EUR', 'RATED_ACCOUNT_PACKAGE', 7.5],
+            [10.0, 'USD', 'UNKNOWN', 'RATED_ACCOUNT_PACKAGE', null, 0],
+            [10.0, 'USD', 'USD', 'RATED_ACCOUNT_PACKAGE', 10, 0],
+            [11.50, 'USD', 'USD', 'PAYOR_ACCOUNT_PACKAGE', 11.5],
+            [11.50, 'USD', 'USD', 'PAYOR_ACCOUNT_PACKAGE', 11.5, 0],
+            [100.01, 'USD', 'USD', 'RATED_ACCOUNT_SHIPMENT', 100.01],
+            [100.01, 'USD', 'USD', 'RATED_ACCOUNT_SHIPMENT', 100.01, 0],
+            [32.2, 'USD', 'USD', 'PAYOR_ACCOUNT_SHIPMENT', 32.2],
+            [32.2, 'USD', 'USD', 'PAYOR_ACCOUNT_SHIPMENT', 32.2, 0],
+            [15.0, 'USD', 'USD', 'RATED_LIST_PACKAGE', 15],
+            [15.0, 'USD', 'USD', 'RATED_LIST_PACKAGE', 15, 0],
+            [123.25, 'USD', 'USD', 'PAYOR_LIST_PACKAGE', 123.25],
+            [123.25, 'USD', 'USD', 'PAYOR_LIST_PACKAGE', 123.25, 0],
+            [12.12, 'USD', 'USD', 'RATED_LIST_SHIPMENT', 12.12],
+            [12.12, 'USD', 'USD', 'RATED_LIST_SHIPMENT', 12.12, 0],
+            [38.9, 'USD', 'USD', 'PAYOR_LIST_SHIPMENT', 38.9],
+            [38.9, 'USD', 'USD', 'PAYOR_LIST_SHIPMENT', 38.9, 0],
+            [10.0, 'SID', 'USD', 'PAYOR_LIST_SHIPMENT', 10.0, 0],
         ];
     }
 
@@ -447,7 +502,7 @@ class CarrierTest extends \PHPUnit_Framework_TestCase
         $response->CompletedTrackDetails->TrackDetails = [$trackDetails];
         // @codingStandardsIgnoreEnd
 
-        $this->soapClientMock->expects($this->exactly($callNum))
+        $this->soapClient->expects($this->exactly($callNum))
             ->method('track')
             ->willReturn($response);
 
@@ -570,7 +625,7 @@ class CarrierTest extends \PHPUnit_Framework_TestCase
         $response->CompletedTrackDetails->TrackDetails = $trackDetails;
         // @codingStandardsIgnoreEnd
 
-        $this->soapClientMock->expects($this->exactly($callNum))
+        $this->soapClient->expects($this->exactly($callNum))
             ->method('track')
             ->willReturn($response);
 
@@ -691,7 +746,7 @@ class CarrierTest extends \PHPUnit_Framework_TestCase
             ->disableOriginalConstructor()
             ->setMethods(['getBaseCurrencyCode'])
             ->getMock();
-        $storeManager = $this->getMock(StoreManagerInterface::class);
+        $storeManager = $this->createMock(StoreManagerInterface::class);
         $storeManager->expects($this->any())
             ->method('getStore')
             ->willReturn($store);
@@ -705,7 +760,7 @@ class CarrierTest extends \PHPUnit_Framework_TestCase
      */
     private function getRateMethodFactory()
     {
-        $priceCurrency = $this->getMock(PriceCurrencyInterface::class);
+        $priceCurrency = $this->createMock(PriceCurrencyInterface::class);
         $rateMethod = $this->getMockBuilder(Method::class)
             ->setConstructorArgs(['priceCurrency' => $priceCurrency])
             ->setMethods(null)

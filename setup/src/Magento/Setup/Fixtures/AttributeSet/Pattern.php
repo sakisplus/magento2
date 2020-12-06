@@ -3,6 +3,7 @@
  * Copyright © Magento, Inc. All rights reserved.
  * See COPYING.txt for license details.
  */
+
 namespace Magento\Setup\Fixtures\AttributeSet;
 
 /**
@@ -10,7 +11,9 @@ namespace Magento\Setup\Fixtures\AttributeSet;
  */
 class Pattern
 {
-    /** @var array */
+    /**
+     * @var array
+     */
     private $attributePattern = [
         'is_required' => 1,
         'is_visible_on_front' => 1,
@@ -30,7 +33,7 @@ class Pattern
      * @param string $name
      * @param int $attributesPerSet
      * @param int $optionsPerAttribute
-     * @param callable $attributePattern  callback in f($index, $attributeData) format
+     * @param callable $attributePattern callback in f($index, $attributeData) format
      * @return array
      */
     public function generateAttributeSet(
@@ -44,9 +47,9 @@ class Pattern
             'attributes' => []
         ];
         for ($index = 1; $index <= $attributesPerSet; $index++) {
-            $attributeData =  $this->generateAttribute(
+            $attributeData = $this->generateAttribute(
                 $index,
-                is_array($optionsPerAttribute) ? $optionsPerAttribute[$index-1] : $optionsPerAttribute
+                is_array($optionsPerAttribute) ? $optionsPerAttribute[$index - 1] : $optionsPerAttribute
             );
             if (is_callable($attributePattern)) {
                 $attributeData = $attributePattern($index, $attributeData);
@@ -70,7 +73,7 @@ class Pattern
         $attribute['attribute_code'] = $attribute['attribute_code'] . $index;
         $attribute['frontend_label'] = $attribute['frontend_label'] . $index;
         $attribute['options'] = ['option' => $this->generateOptions($optionsPerAttribute)];
-        $attribute['default_option'] = $attribute['options']['option'][0]['label'];
+        $attribute['default_value'] = $attribute['options']['option'][0]['value'];
         return $attribute;
     }
 

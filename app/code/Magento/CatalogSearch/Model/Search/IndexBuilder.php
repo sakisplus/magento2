@@ -26,6 +26,8 @@ use Magento\CatalogSearch\Model\Search\FilterMapper\FilterMapper;
 /**
  * Build base Query for Index
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @deprecated 101.0.0
+ * @see \Magento\ElasticSearch
  */
 class IndexBuilder implements IndexBuilderInterface
 {

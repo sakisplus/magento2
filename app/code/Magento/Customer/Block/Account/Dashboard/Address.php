@@ -3,6 +3,7 @@
  * Copyright © Magento, Inc. All rights reserved.
  * See COPYING.txt for license details.
  */
+
 namespace Magento\Customer\Block\Account\Dashboard;
 
 use Magento\Customer\Api\Data\AddressInterface;
@@ -13,6 +14,7 @@ use Magento\Framework\Exception\NoSuchEntityException;
  * Class to manage customer dashboard addresses section
  *
  * @api
+ * @since 100.0.2
  */
 class Address extends \Magento\Framework\View\Element\Template
 {
@@ -103,17 +105,19 @@ class Address extends \Magento\Framework\View\Element\Template
         try {
             $address = $this->currentCustomerAddress->getDefaultBillingAddress();
         } catch (NoSuchEntityException $e) {
-            return __('You have not set a default billing address.');
+            return $this->escapeHtml(__('You have not set a default billing address.'));
         }
 
         if ($address) {
             return $this->_getAddressHtml($address);
         } else {
-            return __('You have not set a default billing address.');
+            return $this->escapeHtml(__('You have not set a default billing address.'));
         }
     }
 
     /**
+     * Get Primary Shipping Address Edit Url
+     *
      * @return string
      */
     public function getPrimaryShippingAddressEditUrl()
@@ -131,6 +135,8 @@ class Address extends \Magento\Framework\View\Element\Template
     }
 
     /**
+     * Get Primary Billing Address Edit Url
+     *
      * @return string
      */
     public function getPrimaryBillingAddressEditUrl()
@@ -148,6 +154,8 @@ class Address extends \Magento\Framework\View\Element\Template
     }
 
     /**
+     * Get Address Book Url
+     *
      * @return string
      */
     public function getAddressBookUrl()

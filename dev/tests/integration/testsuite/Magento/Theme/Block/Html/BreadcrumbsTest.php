@@ -11,7 +11,7 @@ use Magento\TestFramework\Helper\Bootstrap;
 /**
  * @magentoAppArea frontend
  */
-class BreadcrumbsTest extends \PHPUnit_Framework_TestCase
+class BreadcrumbsTest extends \PHPUnit\Framework\TestCase
 {
     /**
      * @var \Magento\Theme\Block\Html\Breadcrumbs
@@ -39,7 +39,7 @@ class BreadcrumbsTest extends \PHPUnit_Framework_TestCase
         $this->block->addCrumb('test', $info);
         $html = $this->block->toHtml();
         $this->assertContains('test label', $html);
-        $this->assertContains('test title', $html);
+        $this->assertContains('test&#x20;title', $html);
         $this->assertContains('test link', $html);
     }
 

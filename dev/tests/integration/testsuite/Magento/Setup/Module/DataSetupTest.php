@@ -7,7 +7,7 @@ namespace Magento\Setup\Module;
 
 use Magento\Framework\Setup\ModuleDataSetupInterface;
 
-class DataSetupTest extends \PHPUnit_Framework_TestCase
+class DataSetupTest extends \PHPUnit\Framework\TestCase
 {
     /**
      * @var ModuleDataSetupInterface
@@ -39,16 +39,7 @@ class DataSetupTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Zend_Db_Statement_Exception
-     */
-    public function testGetTableRow()
-    {
-        $this->assertNotEmpty($this->_model->getTableRow('setup_module', 'module', 'Magento_AdminNotification'));
-        $this->_model->getTableRow('setup/module', 'module', 'Magento_AdminNotification');
-    }
-
-    /**
-     * @expectedException \Zend_Db_Statement_Exception
+     * @expectedException \Magento\Framework\DB\Adapter\TableNotFoundException
      */
     public function testDeleteTableRow()
     {
@@ -56,8 +47,7 @@ class DataSetupTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
-     * @covers \Magento\Setup\Module\DataSetup::updateTableRow
-     * @expectedException \Zend_Db_Statement_Exception
+     * @expectedException \Magento\Framework\DB\Adapter\TableNotFoundException
      */
     public function testUpdateTableRowNameConversion()
     {

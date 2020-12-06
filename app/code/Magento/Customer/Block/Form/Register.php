@@ -6,12 +6,15 @@
 namespace Magento\Customer\Block\Form;
 
 use Magento\Customer\Model\AccountManagement;
+use Magento\Framework\App\ObjectManager;
+use Magento\Newsletter\Model\Config;
 
 /**
  * Customer register form block
  *
  * @api
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @since 100.0.2
  */
 class Register extends \Magento\Directory\Block\Data
 {
@@ -31,6 +34,11 @@ class Register extends \Magento\Directory\Block\Data
     protected $_customerUrl;
 
     /**
+     * @var Config
+     */
+    private $newsLetterConfig;
+
+    /**
      * Constructor
      *
      * @param \Magento\Framework\View\Element\Template\Context $context
@@ -43,6 +51,7 @@ class Register extends \Magento\Directory\Block\Data
      * @param \Magento\Customer\Model\Session $customerSession
      * @param \Magento\Customer\Model\Url $customerUrl
      * @param array $data
+     * @param Config $newsLetterConfig
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList)
      */
@@ -56,11 +65,13 @@ class Register extends \Magento\Directory\Block\Data
         \Magento\Framework\Module\Manager $moduleManager,
         \Magento\Customer\Model\Session $customerSession,
         \Magento\Customer\Model\Url $customerUrl,
-        array $data = []
+        array $data = [],
+        Config $newsLetterConfig = null
     ) {
         $this->_customerUrl = $customerUrl;
         $this->_moduleManager = $moduleManager;
         $this->_customerSession = $customerSession;
+        $this->newsLetterConfig = $newsLetterConfig ?: ObjectManager::getInstance()->get(Config::class);
         parent::__construct(
             $context,
             $directoryHelper,
@@ -82,15 +93,6 @@ class Register extends \Magento\Directory\Block\Data
     public function getConfig($path)
     {
         return $this->_scopeConfig->getValue($path, \Magento\Store\Model\ScopeInterface::SCOPE_STORE);
-    }
-
-    /**
-     * @return $this
-     */
-    protected function _prepareLayout()
-    {
-        $this->pageConfig->getTitle()->set(__('Create New Customer Account'));
-        return parent::_prepareLayout();
     }
 
     /**
@@ -176,11 +178,13 @@ class Register extends \Magento\Directory\Block\Data
      */
     public function isNewsletterEnabled()
     {
-        return $this->_moduleManager->isOutputEnabled('Magento_Newsletter');
+        return $this->_moduleManager->isOutputEnabled('Magento_Newsletter')
+            && $this->newsLetterConfig->isActive();
     }
 
     /**
      * Restore entity data from session
+     *
      * Entity and form code must be defined for the form
      *
      * @param \Magento\Customer\Model\Metadata\Form $form
@@ -202,6 +206,7 @@ class Register extends \Magento\Directory\Block\Data
      * Get minimum password length
      *
      * @return string
+     * @since 100.1.0
      */
     public function getMinimumPasswordLength()
     {
@@ -212,6 +217,7 @@ class Register extends \Magento\Directory\Block\Data
      * Get number of password required character classes
      *
      * @return string
+     * @since 100.1.0
      */
     public function getRequiredCharacterClassesNumber()
     {

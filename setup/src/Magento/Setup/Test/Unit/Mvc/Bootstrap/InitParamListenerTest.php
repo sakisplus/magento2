@@ -5,16 +5,25 @@
  */
 namespace Magento\Setup\Test\Unit\Mvc\Bootstrap;
 
+use Laminas\Console\Request;
+use Laminas\EventManager\EventManagerInterface;
+use Laminas\EventManager\SharedEventManager;
+use Laminas\Http\Headers;
+use Laminas\Http\Response;
+use Laminas\Mvc\Application;
+use Laminas\Mvc\MvcEvent;
+use Laminas\Mvc\Router\Http\RouteMatch;
+use Laminas\ServiceManager\ServiceLocatorInterface;
+use Laminas\ServiceManager\ServiceManager;
+use Laminas\Stdlib\RequestInterface;
 use \Magento\Setup\Mvc\Bootstrap\InitParamListener;
-
 use Magento\Framework\App\Bootstrap as AppBootstrap;
 use Magento\Framework\App\Filesystem\DirectoryList;
-use Zend\Mvc\MvcEvent;
 
 /**
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
-class InitParamListenerTest extends \PHPUnit_Framework_TestCase
+class InitParamListenerTest extends \PHPUnit\Framework\TestCase
 {
 
     /**
@@ -22,10 +31,8 @@ class InitParamListenerTest extends \PHPUnit_Framework_TestCase
      */
     private $listener;
 
-    /**
-     * @var \PHPUnit_Framework_MockObject_MockObject
-     */
-    private $callbackHandler;
+    /** callable[][] */
+    private $callbacks = [];
 
     protected function setUp()
     {
@@ -42,17 +49,17 @@ class InitParamListenerTest extends \PHPUnit_Framework_TestCase
     {
         $events = $this->prepareEventManager();
         $this->listener->attach($events);
-        $events->expects($this->once())->method('detach')->with($this->callbackHandler)->willReturn(true);
+        $events->expects($this->once())->method('detach')->with([$this->listener, 'onBootstrap'])->willReturn(true);
         $this->listener->detach($events);
     }
 
     public function testOnBootstrap()
     {
-        /** @var \Zend\Mvc\MvcEvent|\PHPUnit_Framework_MockObject_MockObject $mvcEvent */
-        $mvcEvent = $this->getMock(\Zend\Mvc\MvcEvent::class);
-        $mvcApplication = $this->getMockBuilder(\Zend\Mvc\Application::class)->disableOriginalConstructor()->getMock();
+        /** @var MvcEvent|\PHPUnit_Framework_MockObject_MockObject $mvcEvent */
+        $mvcEvent = $this->createMock(MvcEvent::class);
+        $mvcApplication = $this->getMockBuilder(Application::class)->disableOriginalConstructor()->getMock();
         $mvcEvent->expects($this->once())->method('getApplication')->willReturn($mvcApplication);
-        $serviceManager = $this->getMock(\Zend\ServiceManager\ServiceManager::class);
+        $serviceManager = $this->createMock(ServiceManager::class);
         $initParams[AppBootstrap::INIT_PARAM_FILESYSTEM_DIR_PATHS][DirectoryList::ROOT] = ['path' => '/test'];
         $serviceManager->expects($this->once())->method('get')
             ->willReturn($initParams);
@@ -69,7 +76,7 @@ class InitParamListenerTest extends \PHPUnit_Framework_TestCase
             );
         $mvcApplication->expects($this->any())->method('getServiceManager')->willReturn($serviceManager);
 
-        $eventManager = $this->getMockForAbstractClass(\Zend\EventManager\EventManagerInterface::class);
+        $eventManager = $this->getMockForAbstractClass(EventManagerInterface::class);
         $mvcApplication->expects($this->any())->method('getEventManager')->willReturn($eventManager);
         $eventManager->expects($this->any())->method('attach');
 
@@ -97,11 +104,11 @@ class InitParamListenerTest extends \PHPUnit_Framework_TestCase
     public function testCreateServiceNotConsole()
     {
         /**
-         * @var \Zend\ServiceManager\ServiceLocatorInterface|\PHPUnit_Framework_MockObject_MockObject $serviceLocator
+         * @var ServiceLocatorInterface|\PHPUnit_Framework_MockObject_MockObject $serviceLocator
          */
-        $serviceLocator = $this->getMock(\Zend\ServiceManager\ServiceLocatorInterface::class);
-        $mvcApplication = $this->getMockBuilder(\Zend\Mvc\Application::class)->disableOriginalConstructor()->getMock();
-        $request = $this->getMock(\Zend\Stdlib\RequestInterface::class);
+        $serviceLocator = $this->createMock(ServiceLocatorInterface::class);
+        $mvcApplication = $this->getMockBuilder(Application::class)->disableOriginalConstructor()->getMock();
+        $request = $this->createMock(RequestInterface::class);
         $mvcApplication->expects($this->any())->method('getRequest')->willReturn($request);
         $serviceLocator->expects($this->once())->method('get')->with('Application')
             ->willReturn($mvcApplication);
@@ -123,11 +130,11 @@ class InitParamListenerTest extends \PHPUnit_Framework_TestCase
         }
         $listener = new InitParamListener();
         /**
-         * @var \Zend\ServiceManager\ServiceLocatorInterface|\PHPUnit_Framework_MockObject_MockObject $serviceLocator
+         * @var ServiceLocatorInterface|\PHPUnit_Framework_MockObject_MockObject $serviceLocator
          */
-        $serviceLocator = $this->getMock(\Zend\ServiceManager\ServiceLocatorInterface::class);
-        $mvcApplication = $this->getMockBuilder(\Zend\Mvc\Application::class)->disableOriginalConstructor()->getMock();
-        $request = $this->getMockBuilder(\Zend\Console\Request::class)->disableOriginalConstructor()->getMock();
+        $serviceLocator = $this->createMock(ServiceLocatorInterface::class);
+        $mvcApplication = $this->getMockBuilder(Application::class)->disableOriginalConstructor()->getMock();
+        $request = $this->getMockBuilder(Request::class)->disableOriginalConstructor()->getMock();
         $request->expects($this->any())
             ->method('getContent')
             ->willReturn(
@@ -144,6 +151,9 @@ class InitParamListenerTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals($expectedArray, $listener->createService($serviceLocator));
     }
 
+    /**
+     * @return array
+     */
     public function createServiceDataProvider()
     {
         return [
@@ -189,16 +199,16 @@ class InitParamListenerTest extends \PHPUnit_Framework_TestCase
                 ['MAGE_DIRS' => ['base' => ['path' => '/var/www/magento2/Env']], 'MAGE_MODE' => 'developer'],
             ],
             'CLI overwrites Env' => [
-                ['MAGE_MODE' => 'developerApp'],
+                ['MAGE_MODE' => 'developer'],
                 ['MAGE_DIRS' => ['base' => ['path' => '/var/www/magento2/Env']]],
                 'MAGE_DIRS[base][path]=/var/www/magento2/CLI',
-                ['MAGE_DIRS' => ['base' => ['path' => '/var/www/magento2/CLI']], 'MAGE_MODE' => 'developerApp'],
+                ['MAGE_DIRS' => ['base' => ['path' => '/var/www/magento2/CLI']], 'MAGE_MODE' => 'developer'],
             ],
             'CLI overwrites All' => [
                 ['MAGE_DIRS' => ['base' => ['path' => '/var/www/magento2/App']], 'MAGE_MODE' => 'production'],
                 ['MAGE_DIRS' => ['base' => ['path' => '/var/www/magento2/Env']]],
                 'MAGE_DIRS[base][path]=/var/www/magento2/CLI',
-                ['MAGE_DIRS' => ['base' => ['path' => '/var/www/magento2/CLI']], 'MAGE_MODE' => 'production'],
+                ['MAGE_DIRS' => ['base' => ['path' => '/var/www/magento2/CLI']], 'MAGE_MODE' => 'developer'],
             ],
         ];
     }
@@ -227,19 +237,19 @@ class InitParamListenerTest extends \PHPUnit_Framework_TestCase
      */
     private function prepareEventManager()
     {
-        $this->callbackHandler = $this->getMockBuilder(\Zend\Stdlib\CallbackHandler::class)
-            ->disableOriginalConstructor()
-            ->getMock();
+        $this->callbacks[] =  [$this->listener, 'onBootstrap'];
 
-        /** @var \Zend\EventManager\EventManagerInterface|\PHPUnit_Framework_MockObject_MockObject $events */
-        $eventManager = $this->getMock(\Zend\EventManager\EventManagerInterface::class);
+        /** @var EventManagerInterface|\PHPUnit_Framework_MockObject_MockObject $events */
+        $eventManager = $this->createMock(EventManagerInterface::class);
 
-        $sharedManager = $this->getMock(\Zend\EventManager\SharedEventManager::class);
+        $sharedManager = $this->createMock(SharedEventManager::class);
         $sharedManager->expects($this->once())->method('attach')->with(
-            \Zend\Mvc\Application::class,
+            Application::class,
             MvcEvent::EVENT_BOOTSTRAP,
             [$this->listener, 'onBootstrap']
-        )->willReturn($this->callbackHandler);
+        );
+
+        $sharedManager->expects($this->once())->method('getListeners')->willReturn($this->callbacks);
         $eventManager->expects($this->once())->method('getSharedManager')->willReturn($sharedManager);
 
         return $eventManager;
@@ -251,16 +261,16 @@ class InitParamListenerTest extends \PHPUnit_Framework_TestCase
     public function testAuthPreDispatch()
     {
         $cookiePath = 'test';
-        $eventMock = $this->getMockBuilder(\Zend\Mvc\MvcEvent::class)
+        $eventMock = $this->getMockBuilder(MvcEvent::class)
             ->disableOriginalConstructor()
             ->getMock();
-        $routeMatchMock = $this->getMockBuilder(\Zend\Mvc\Router\Http\RouteMatch::class)
+        $routeMatchMock = $this->getMockBuilder(RouteMatch::class)
             ->disableOriginalConstructor()
             ->getMock();
-        $applicationMock = $this->getMockBuilder(\Zend\Mvc\Application::class)
+        $applicationMock = $this->getMockBuilder(Application::class)
             ->disableOriginalConstructor()
             ->getMock();
-        $serviceManagerMock = $this->getMockBuilder(\Zend\ServiceManager\ServiceManager::class)
+        $serviceManagerMock = $this->getMockBuilder(ServiceManager::class)
             ->disableOriginalConstructor()
             ->getMock();
         $deploymentConfigMock = $this->getMockBuilder(\Magento\Framework\App\DeploymentConfig::class)
@@ -294,19 +304,29 @@ class InitParamListenerTest extends \PHPUnit_Framework_TestCase
         $adminSessionMock = $this->getMockBuilder(\Magento\Backend\Model\Auth\Session::class)
             ->disableOriginalConstructor()
             ->getMock();
-        $responseMock = $this->getMockBuilder(\Zend\Http\Response::class)
+        $responseMock = $this->getMockBuilder(Response::class)
             ->disableOriginalConstructor()
             ->getMock();
-        $headersMock = $this->getMockBuilder(\Zend\Http\Headers::class)
+        $headersMock = $this->getMockBuilder(Headers::class)
             ->disableOriginalConstructor()
             ->getMock();
 
         $routeMatchMock->expects($this->exactly(2))
             ->method('getParam')
-            ->willReturnMap([
-                ['controller', null, 'testController'],
-                ['action', null, 'testAction']
-            ]);
+            ->willReturnMap(
+                [
+                    [
+                        'controller',
+                        null,
+                        'testController'
+                    ],
+                    [
+                        'action',
+                        null,
+                        'testAction'
+                    ]
+                ]
+            );
         $eventMock->expects($this->once())
             ->method('getRouteMatch')
             ->willReturn($routeMatchMock);
@@ -422,10 +442,10 @@ class InitParamListenerTest extends \PHPUnit_Framework_TestCase
 
     public function testAuthPreDispatchSkip()
     {
-        $eventMock = $this->getMockBuilder(\Zend\Mvc\MvcEvent::class)
+        $eventMock = $this->getMockBuilder(MvcEvent::class)
             ->disableOriginalConstructor()
             ->getMock();
-        $routeMatchMock = $this->getMockBuilder(\Zend\Mvc\Router\Http\RouteMatch::class)
+        $routeMatchMock = $this->getMockBuilder(RouteMatch::class)
             ->disableOriginalConstructor()
             ->getMock();
         $deploymentConfigMock = $this->getMockBuilder(\Magento\Framework\App\DeploymentConfig::class)
@@ -436,10 +456,20 @@ class InitParamListenerTest extends \PHPUnit_Framework_TestCase
             ->method('isAvailable');
         $routeMatchMock->expects($this->exactly(2))
             ->method('getParam')
-            ->willReturnMap([
-                ['controller', null, \Magento\Setup\Controller\Session::class],
-                ['action', null, 'unlogin']
-            ]);
+            ->willReturnMap(
+                [
+                    [
+                        'controller',
+                        null,
+                        \Magento\Setup\Controller\Session::class
+                    ],
+                    [
+                        'action',
+                        null,
+                        'unlogin'
+                    ]
+                ]
+            );
         $eventMock->expects($this->once())
             ->method('getRouteMatch')
             ->willReturn($routeMatchMock);

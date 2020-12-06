@@ -10,6 +10,9 @@ use Magento\Braintree\Gateway\Request\PaymentDataBuilder;
 
 /**
  * Class TransactionSubmitForSettlement
+ *
+ * @deprecated Starting from Magento 2.3.6 Braintree payment method core integration is deprecated
+ * in favor of official payment integration available on the marketplace
  */
 class TransactionSubmitForSettlement extends AbstractTransaction
 {
@@ -18,9 +21,9 @@ class TransactionSubmitForSettlement extends AbstractTransaction
      */
     protected function process(array $data)
     {
-        return  $this->adapter->submitForSettlement(
-            $data[CaptureDataBuilder::TRANSACTION_ID],
-            $data[PaymentDataBuilder::AMOUNT]
-        );
+        $storeId = $data['store_id'] ?? null;
+
+        return  $this->adapterFactory->create($storeId)
+            ->submitForSettlement($data[CaptureDataBuilder::TRANSACTION_ID], $data[PaymentDataBuilder::AMOUNT]);
     }
 }

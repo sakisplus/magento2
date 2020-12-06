@@ -7,6 +7,9 @@ namespace Magento\Framework\Search\Adapter\Mysql\Query;
 
 /**
  * MatchContainer Factory
+ *
+ * @deprecated 102.0.0
+ * @see \Magento\ElasticSearch
  */
 class QueryContainerFactory
 {

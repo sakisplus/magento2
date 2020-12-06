@@ -10,14 +10,17 @@ use Magento\ImportExport\Model\Import\ErrorProcessing\ProcessingErrorAggregatorI
 /**
  * Import EAV entity abstract model
  *
+ * phpcs:disable Magento2.Classes.AbstractApi
  * @api
- *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @since 100.0.2
  */
 abstract class AbstractEav extends \Magento\ImportExport\Model\Import\AbstractEntity
 {
     /**
      * Attribute collection name
+     *
+     * Name of collection class
      */
     const ATTRIBUTE_COLLECTION_NAME = \Magento\Framework\Data\Collection::class;
 
@@ -128,7 +131,7 @@ abstract class AbstractEav extends \Magento\ImportExport\Model\Import\AbstractEn
     public function getWebsiteId($websiteCode)
     {
         if (isset($this->_websiteCodeToId[$websiteCode])) {
-            return $this->_websiteCodeToId[$websiteCode];
+            return (int) $this->_websiteCodeToId[$websiteCode];
         }
 
         return false;
@@ -225,12 +228,13 @@ abstract class AbstractEav extends \Magento\ImportExport\Model\Import\AbstractEn
                 foreach ($attribute->getSource()->getAllOptions(false) as $option) {
                     $value = is_array($option['value']) ? $option['value'] : [$option];
                     foreach ($value as $innerOption) {
+                        // skip ' -- Please Select -- ' option
                         if (strlen($innerOption['value'])) {
-                            // skip ' -- Please Select -- ' option
-                            $options[strtolower($innerOption[$index])] = $innerOption['value'];
+                            $options[mb_strtolower($innerOption[$index])] = $innerOption['value'];
                         }
                     }
                 }
+                // phpcs:ignore Magento2.CodeAnalysis.EmptyBlock
             } catch (\Exception $e) {
                 // ignore exceptions connected with source models
             }

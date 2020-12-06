@@ -13,8 +13,9 @@ use Magento\Framework\Reflection\DataObjectProcessor;
 
 /**
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @SuppressWarnings(PHPMD.TooManyFields)
  */
-class SaveTest extends \PHPUnit_Framework_TestCase
+class SaveTest extends \PHPUnit\Framework\TestCase
 {
     /** @var Save */
     protected $controller;
@@ -166,7 +167,7 @@ class SaveTest extends \PHPUnit_Framework_TestCase
             ->method('save')
             ->with($this->group);
         $this->messageManager->expects($this->once())
-            ->method('addSuccess')
+            ->method('addSuccessMessage')
             ->with(__('You saved the customer group.'));
         $exception = new \Exception('Exception');
         $this->resultRedirect->expects($this->at(0))
@@ -174,7 +175,7 @@ class SaveTest extends \PHPUnit_Framework_TestCase
             ->with('customer/group')
             ->willThrowException($exception);
         $this->messageManager->expects($this->once())
-            ->method('addError')
+            ->method('addErrorMessage')
             ->with('Exception');
         $this->dataObjectProcessorMock->expects($this->once())
             ->method('buildOutputDataArray')

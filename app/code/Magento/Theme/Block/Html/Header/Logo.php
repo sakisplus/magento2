@@ -10,6 +10,7 @@ namespace Magento\Theme\Block\Html\Header;
  * Logo page header block
  *
  * @api
+ * @since 100.0.2
  */
 class Logo extends \Magento\Framework\View\Element\Template
 {
@@ -18,7 +19,7 @@ class Logo extends \Magento\Framework\View\Element\Template
      *
      * @var string
      */
-    protected $_template = 'html/header/logo.phtml';
+    protected $_template = 'Magento_Theme::html/header/logo.phtml';
 
     /**
      * @var \Magento\MediaStorage\Helper\File\Storage\Database
@@ -41,6 +42,10 @@ class Logo extends \Magento\Framework\View\Element\Template
 
     /**
      * Check if current url is url for home page
+     *
+     * @deprecated 101.0.1 This function is no longer used. It was previously used by
+     * Magento/Theme/view/frontend/templates/html/header/logo.phtml
+     * to check if the logo should be clickable on the homepage.
      *
      * @return bool
      */
@@ -93,7 +98,7 @@ class Logo extends \Magento\Framework\View\Element\Template
                 \Magento\Store\Model\ScopeInterface::SCOPE_STORE
             );
         }
-        return (int)$this->_data['logo_width'] ? : (int)$this->getLogoImgWidth();
+        return (int)$this->_data['logo_width'];
     }
 
     /**
@@ -109,7 +114,7 @@ class Logo extends \Magento\Framework\View\Element\Template
                 \Magento\Store\Model\ScopeInterface::SCOPE_STORE
             );
         }
-        return (int)$this->_data['logo_height'] ? : (int)$this->getLogoImgHeight();
+        return (int)$this->_data['logo_height'];
     }
 
     /**

@@ -12,8 +12,6 @@ use Magento\Catalog\Model\ResourceModel\Product\Link\Product\Collection as Produ
  * Catalog product link model
  *
  * @api
- * @method \Magento\Catalog\Model\ResourceModel\Product\Link _getResource()
- * @method \Magento\Catalog\Model\ResourceModel\Product\Link getResource()
  * @method int getProductId()
  * @method \Magento\Catalog\Model\Product\Link setProductId(int $value)
  * @method int getLinkedProductId()
@@ -23,6 +21,7 @@ use Magento\Catalog\Model\ResourceModel\Product\Link\Product\Collection as Produ
  *
  * @author      Magento Core Team <core@magentocommerce.com>
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @since 100.0.2
  */
 class Link extends \Magento\Framework\Model\AbstractModel
 {
@@ -53,12 +52,13 @@ class Link extends \Magento\Framework\Model\AbstractModel
 
     /**
      * @var \Magento\Catalog\Model\Product\Link\SaveHandler
+     * @since 101.0.0
      */
     protected $saveProductLinks;
 
     /**
      * @var \Magento\CatalogInventory\Helper\Stock
-     * @deprecated
+     * @deprecated 101.0.0
      */
     protected $stockHelper;
 
@@ -99,6 +99,8 @@ class Link extends \Magento\Framework\Model\AbstractModel
     }
 
     /**
+     * Define link type as related
+     *
      * @return $this
      */
     public function useRelatedLinks()
@@ -108,6 +110,8 @@ class Link extends \Magento\Framework\Model\AbstractModel
     }
 
     /**
+     * Define link type as upsell
+     *
      * @return $this
      */
     public function useUpSellLinks()
@@ -117,6 +121,8 @@ class Link extends \Magento\Framework\Model\AbstractModel
     }
 
     /**
+     * Define link type as cross sell
+     *
      * @return $this
      */
     public function useCrossSellLinks()
@@ -159,6 +165,8 @@ class Link extends \Magento\Framework\Model\AbstractModel
     }
 
     /**
+     * Retrieve attributes
+     *
      * @param int $type
      * @return array
      */
@@ -187,6 +195,8 @@ class Link extends \Magento\Framework\Model\AbstractModel
     }
 
     /**
+     * Retrieve product link save handler
+     *
      * @return Link\SaveHandler
      */
     private function getProductLinkSaveHandler()

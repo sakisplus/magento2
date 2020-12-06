@@ -10,8 +10,10 @@ use Magento\CatalogSearch\Model\Adapter\Mysql\BaseSelectStrategy\BaseSelectFullT
 use Magento\CatalogSearch\Model\Adapter\Mysql\BaseSelectStrategy\BaseSelectAttributesSearchStrategy;
 
 /**
- * Class StrategyMapper
  * This class is responsible for deciding which BaseSelectStrategyInterface should be used for passed SelectContainer
+ *
+ * @deprecated 101.0.0
+ * @see \Magento\ElasticSearch
  */
 class StrategyMapper
 {
@@ -45,8 +47,7 @@ class StrategyMapper
      */
     public function mapSelectContainerToStrategy(SelectContainer $selectContainer)
     {
-        if (
-            $selectContainer->isFullTextSearchRequired()
+        if ($selectContainer->isFullTextSearchRequired()
             && !$selectContainer->hasCustomAttributesFilters()
             && !$selectContainer->hasVisibilityFilter()
         ) {

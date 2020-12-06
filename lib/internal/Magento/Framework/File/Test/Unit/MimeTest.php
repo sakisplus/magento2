@@ -5,13 +5,19 @@
  */
 namespace Magento\Framework\File\Test\Unit;
 
-class MimeTest extends \PHPUnit_Framework_TestCase
+/**
+ * Test mime type utility for correct
+ */
+class MimeTest extends \PHPUnit\Framework\TestCase
 {
     /**
      * @var \Magento\Framework\File\Mime
      */
     private $object;
 
+    /**
+     * @inheritDoc
+     */
     protected function setUp()
     {
         $this->object = new \Magento\Framework\File\Mime();
@@ -42,12 +48,13 @@ class MimeTest extends \PHPUnit_Framework_TestCase
     /**
      * @return array
      */
-    public function getMimeTypeDataProvider()
+    public function getMimeTypeDataProvider(): array
     {
         return [
             'javascript' => [__DIR__ . '/_files/javascript.js', 'application/javascript'],
             'weird extension' => [__DIR__ . '/_files/file.weird', 'application/octet-stream'],
             'weird uppercase extension' => [__DIR__ . '/_files/UPPERCASE.WEIRD', 'application/octet-stream'],
+            'generic mime type' => [__DIR__ . '/_files/blank.html', 'text/html'],
         ];
     }
 }

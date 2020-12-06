@@ -10,6 +10,7 @@ use Magento\Quote\Api\Data\PaymentInterface;
 /**
  * Interface CartManagementInterface
  * @api
+ * @since 100.0.2
  */
 interface CartManagementInterface
 {
@@ -51,6 +52,9 @@ interface CartManagementInterface
      * @param int $customerId The customer ID.
      * @param int $storeId
      * @return boolean
+     * @throws \Magento\Framework\Exception\LocalizedException
+     * @throws \Magento\Framework\Exception\StateException
+     * @throws \Magento\Framework\Exception\NoSuchEntityException
      */
     public function assignCustomer($cartId, $customerId, $storeId);
 

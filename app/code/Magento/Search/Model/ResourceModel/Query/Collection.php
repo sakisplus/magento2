@@ -11,6 +11,7 @@ use Magento\Store\Model\Store;
  * Search query collection
  *
  * @api
+ * @since 100.0.2
  */
 class Collection extends \Magento\Framework\Model\ResourceModel\Db\Collection\AbstractCollection
 {
@@ -129,7 +130,6 @@ class Collection extends \Magento\Framework\Model\ResourceModel\Db\Collection\Ab
      */
     public function setPopularQueryFilter($storeIds = null)
     {
-
         $this->getSelect()->reset(
             \Magento\Framework\DB\Select::FROM
         )->reset(
@@ -139,13 +139,10 @@ class Collection extends \Magento\Framework\Model\ResourceModel\Db\Collection\Ab
         )->from(
             ['main_table' => $this->getTable('search_query')]
         );
-        if ($storeIds) {
-            $this->addStoreFilter($storeIds);
-            $this->getSelect()->where('num_results > 0');
-        } elseif (null === $storeIds) {
-            $this->addStoreFilter($this->_storeManager->getStore()->getId());
-            $this->getSelect()->where('num_results > 0');
-        }
+
+        $storeIds = $storeIds ?: $this->_storeManager->getStore()->getId();
+        $this->addStoreFilter($storeIds);
+        $this->getSelect()->where('num_results > 0');
 
         $this->getSelect()->order(['popularity desc']);
 
@@ -171,10 +168,9 @@ class Collection extends \Magento\Framework\Model\ResourceModel\Db\Collection\Ab
      */
     public function addStoreFilter($storeIds)
     {
-        if (!is_array($storeIds)) {
-            $storeIds = [$storeIds];
-        }
-        $this->getSelect()->where('main_table.store_id IN (?)', $storeIds);
+        $condition = is_array($storeIds) ? 'main_table.store_id IN (?)' : 'main_table.store_id = ?';
+        $this->getSelect()->where($condition, $storeIds);
+
         return $this;
     }
 }

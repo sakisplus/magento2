@@ -9,7 +9,10 @@ use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Store\Model\ScopeInterface;
 use Magento\Theme\Ui\Component\Listing\Column\EditAction;
 
-class EditActionTest extends \PHPUnit_Framework_TestCase
+/**
+ * Class EditActionTest
+ */
+class EditActionTest extends \PHPUnit\Framework\TestCase
 {
     /** @var EditAction */
     protected $component;
@@ -31,13 +34,7 @@ class EditActionTest extends \PHPUnit_Framework_TestCase
             ->disableOriginalConstructor()
             ->getMock();
         $this->context->expects($this->never())->method('getProcessor')->willReturn($processor);
-        $this->uiComponentFactory = $this->getMock(
-            \Magento\Framework\View\Element\UiComponentFactory::class,
-            [],
-            [],
-            '',
-            false
-        );
+        $this->uiComponentFactory = $this->createMock(\Magento\Framework\View\Element\UiComponentFactory::class);
         $this->urlBuilder = $this->getMockForAbstractClass(
             \Magento\Framework\UrlInterface::class,
             [],
@@ -70,6 +67,7 @@ class EditActionTest extends \PHPUnit_Framework_TestCase
                 'edit' => [
                     'href' => 'http://magento.com/theme/design_config/edit',
                     'label' => new \Magento\Framework\Phrase('Edit'),
+                    '__disableTmpl' => true,
                 ]
             ],
         ];
@@ -88,6 +86,9 @@ class EditActionTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals($expectedDataSource, $dataSource);
     }
 
+    /**
+     * @return array
+     */
     public function getPrepareDataSourceDataProvider()
     {
         return [

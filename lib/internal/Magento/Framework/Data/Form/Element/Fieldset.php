@@ -13,6 +13,7 @@ use Magento\Framework\Escaper;
  *
  * @api
  * @author      Magento Core Team <core@magentocommerce.com>
+ * @since 100.0.2
  */
 class Fieldset extends AbstractElement
 {
@@ -43,7 +44,8 @@ class Fieldset extends AbstractElement
      */
     public function getElementHtml()
     {
-        $html = '<fieldset id="' . $this->getHtmlId() . '"' . $this->serialize(
+        $html = $this->getBeforeElementHtml();
+        $html .= '<fieldset area-hidden="false" id="' . $this->getHtmlId() . '"' . $this->serialize(
             ['class']
         ) . $this->_getUiId() . '>' . "\n";
         if ($this->getLegend()) {

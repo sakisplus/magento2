@@ -3,59 +3,77 @@
  * Copyright © Magento, Inc. All rights reserved.
  * See COPYING.txt for license details.
  */
+declare(strict_types=1);
+
 namespace Magento\PageCache\Test\Unit\Model\Layout;
 
-class LayoutPluginTest extends \PHPUnit_Framework_TestCase
+use Magento\Framework\App\Config\ScopeConfigInterface;
+use Magento\Framework\App\Response\Http;
+use Magento\Framework\App\ResponseInterface;
+use Magento\Framework\TestFramework\Unit\Helper\ObjectManager as ObjectManagerHelper;
+use Magento\Framework\View\Layout;
+use Magento\PageCache\Model\Config;
+use Magento\PageCache\Model\Layout\LayoutPlugin;
+use Magento\PageCache\Model\Spi\PageCacheTagsPreprocessorInterface;
+use Magento\PageCache\Test\Unit\Block\Controller\StubBlock;
+use PHPUnit\Framework\TestCase;
+use PHPUnit_Framework_MockObject_MockObject;
+
+/**
+ * Tests \Magento\PageCache\Model\Layout\LayoutPlugin.
+ */
+class LayoutPluginTest extends TestCase
 {
     /**
-     * @var \Magento\PageCache\Model\Layout\LayoutPlugin
+     * @var LayoutPlugin
      */
-    protected $model;
+    private $model;
 
     /**
-     * @var \Magento\Framework\App\ResponseInterface|\PHPUnit_Framework_MockObject_MockObject
+     * @var ResponseInterface|PHPUnit_Framework_MockObject_MockObject
      */
-    protected $responseMock;
+    private $responseMock;
 
     /**
-     * @var \Magento\Framework\View\Layout|\PHPUnit_Framework_MockObject_MockObject
+     * @var Layout|PHPUnit_Framework_MockObject_MockObject
      */
-    protected $layoutMock;
+    private $layoutMock;
 
     /**
-     * @var \Magento\Framework\App\Config\ScopeConfigInterface
+     * @var ScopeConfigInterface
      */
-    protected $configMock;
+    private $configMock;
 
+    /**
+     * @inheritdoc
+     */
     protected function setUp()
     {
-        $this->layoutMock = $this->getMockForAbstractClass(
-            \Magento\Framework\View\Layout::class,
-            [],
-            '',
-            false,
-            true,
-            true,
-            ['isCacheable', 'getAllBlocks']
-        );
-        $this->responseMock = $this->getMock(\Magento\Framework\App\Response\Http::class, [], [], '', false);
-        $this->configMock = $this->getMock(\Magento\PageCache\Model\Config::class, [], [], '', false);
+        $this->layoutMock = $this->createPartialMock(Layout::class, ['isCacheable', 'getAllBlocks']);
+        $this->responseMock = $this->createMock(Http::class);
+        $this->configMock = $this->createMock(Config::class);
+        $preprocessor = $this->createMock(PageCacheTagsPreprocessorInterface::class);
+        $preprocessor->method('process')->willReturnArgument(0);
 
-        $this->model = new \Magento\PageCache\Model\Layout\LayoutPlugin(
-            $this->responseMock,
-            $this->configMock
+        $this->model = (new ObjectManagerHelper($this))->getObject(
+            LayoutPlugin::class,
+            [
+                'response' => $this->responseMock,
+                'config' => $this->configMock,
+                'pageCacheTagsPreprocessor' => $preprocessor
+            ]
         );
     }
 
     /**
      * @param $cacheState
      * @param $layoutIsCacheable
+     * @return void
      * @dataProvider afterGenerateXmlDataProvider
      */
-    public function testAfterGenerateXml($cacheState, $layoutIsCacheable)
+    public function testAfterGenerateElements($cacheState, $layoutIsCacheable): void
     {
         $maxAge = 180;
-        $result = 'test';
 
         $this->layoutMock->expects($this->once())->method('isCacheable')->will($this->returnValue($layoutIsCacheable));
         $this->configMock->expects($this->any())->method('isEnabled')->will($this->returnValue($cacheState));
@@ -66,17 +84,20 @@ class LayoutPluginTest extends \PHPUnit_Framework_TestCase
         } else {
             $this->responseMock->expects($this->never())->method('setPublicHeaders');
         }
-        $output = $this->model->afterGenerateXml($this->layoutMock, $result);
-        $this->assertSame($result, $output);
+
+        $this->assertEmpty($this->model->afterGenerateElements($this->layoutMock));
     }
 
-    public function afterGenerateXmlDataProvider()
+    /**
+     * @return array
+     */
+    public function afterGenerateXmlDataProvider(): array
     {
         return [
             'Full_cache state is true, Layout is cache-able' => [true, true],
             'Full_cache state is true, Layout is not cache-able' => [true, false],
             'Full_cache state is false, Layout is not cache-able' => [false, false],
-            'Full_cache state is false, Layout is cache-able' => [false, true]
+            'Full_cache state is false, Layout is cache-able' => [false, true],
         ];
     }
 
@@ -86,20 +107,19 @@ class LayoutPluginTest extends \PHPUnit_Framework_TestCase
      * @param $expectedTags
      * @param $configCacheType
      * @param $ttl
+     * @return void
      * @dataProvider afterGetOutputDataProvider
      */
-    public function testAfterGetOutput($cacheState, $layoutIsCacheable, $expectedTags, $configCacheType, $ttl)
+    public function testAfterGetOutput($cacheState, $layoutIsCacheable, $expectedTags, $configCacheType, $ttl): void
     {
         $html = 'html';
         $this->configMock->expects($this->any())->method('isEnabled')->will($this->returnValue($cacheState));
-        $blockStub = $this->getMock(
-            \Magento\PageCache\Test\Unit\Block\Controller\StubBlock::class,
-            null,
-            [],
-            '',
-            false
+        $blockStub = $this->createPartialMock(
+            StubBlock::class,
+            ['getIdentities']
         );
         $blockStub->setTtl($ttl);
+        $blockStub->expects($this->any())->method('getIdentities')->willReturn(['identity1', 'identity2']);
         $this->layoutMock->expects($this->once())->method('isCacheable')->will($this->returnValue($layoutIsCacheable));
         $this->layoutMock->expects($this->any())->method('getAllBlocks')->will($this->returnValue([$blockStub]));
 
@@ -114,42 +134,45 @@ class LayoutPluginTest extends \PHPUnit_Framework_TestCase
         $this->assertSame($output, $html);
     }
 
-    public function afterGetOutputDataProvider()
+    /**
+     * @return array
+     */
+    public function afterGetOutputDataProvider(): array
     {
         $tags = 'identity1,identity2';
         return [
             'Cacheable layout, Full_cache state is true' => [true, true, $tags, null, 0],
             'Non-cacheable layout' => [true, false, null, null, 0],
-            'Cacheable layout with Varnish' => [true, true, $tags, \Magento\PageCache\Model\Config::VARNISH, 0],
+            'Cacheable layout with Varnish' => [true, true, $tags, Config::VARNISH, 0],
             'Cacheable layout with Varnish, Full_cache state is false' => [
                 false,
                 true,
                 $tags,
-                \Magento\PageCache\Model\Config::VARNISH,
+                Config::VARNISH,
                 0,
             ],
             'Cacheable layout with Varnish and esi' => [
                 true,
                 true,
                 null,
-                \Magento\PageCache\Model\Config::VARNISH,
+                Config::VARNISH,
                 100,
             ],
-            'Cacheable layout with Builtin' => [true, true, $tags, \Magento\PageCache\Model\Config::BUILT_IN, 0],
+            'Cacheable layout with Builtin' => [true, true, $tags, Config::BUILT_IN, 0],
             'Cacheable layout with Builtin, Full_cache state is false' => [
                 false,
                 true,
                 $tags,
-                \Magento\PageCache\Model\Config::BUILT_IN,
+                Config::BUILT_IN,
                 0,
             ],
             'Cacheable layout with Builtin and esi' => [
                 true,
                 false,
                 $tags,
-                \Magento\PageCache\Model\Config::BUILT_IN,
+                Config::BUILT_IN,
                 100,
-            ]
+            ],
         ];
     }
 }

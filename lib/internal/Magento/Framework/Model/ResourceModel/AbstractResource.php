@@ -14,13 +14,21 @@ use Magento\Framework\Serialize\Serializer\Json;
  * Abstract resource model
  *
  * @api
+ * @since 100.0.2
  */
 abstract class AbstractResource
 {
     /**
      * @var Json
+     * @since 101.0.0
      */
     protected $serializer;
+
+    /**
+     * @var \Psr\Log\LoggerInterface
+     * @since 102.0.0
+     */
+    protected $_logger;
 
     /**
      * Constructor
@@ -91,7 +99,7 @@ abstract class AbstractResource
                     call_user_func($callback);
                 }
             } catch (\Exception $e) {
-                $this->logger->critical($e);
+                $this->getLogger()->critical($e);
             }
         }
         return $this;
@@ -241,7 +249,8 @@ abstract class AbstractResource
      * Get serializer
      *
      * @return Json
-     * @deprecated
+     * @deprecated 101.0.0
+     * @since 101.0.0
      */
     protected function getSerializer()
     {
@@ -249,5 +258,19 @@ abstract class AbstractResource
             $this->serializer = ObjectManager::getInstance()->get(Json::class);
         }
         return $this->serializer;
+    }
+
+    /**
+     * Get logger
+     *
+     * @return \Psr\Log\LoggerInterface
+     * @deprecated 101.0.1
+     */
+    private function getLogger()
+    {
+        if (null === $this->_logger) {
+            $this->_logger = ObjectManager::getInstance()->get(\Psr\Log\LoggerInterface::class);
+        }
+        return $this->_logger;
     }
 }

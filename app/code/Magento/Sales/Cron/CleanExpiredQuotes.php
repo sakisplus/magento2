@@ -5,40 +5,90 @@
  */
 namespace Magento\Sales\Cron;
 
-use Magento\Store\Model\StoresConfig;
+use Exception;
+use Magento\Framework\DB\Query\Generator as QueryGenerator;
+use Magento\Framework\DB\Select;
+use Magento\Quote\Api\CartRepositoryInterface;
+use Magento\Quote\Api\Data\CartInterfaceFactory;
+use Magento\Quote\Model\ResourceModel\Quote as ResourceQuote;
+use Magento\Quote\Model\ResourceModel\Quote\Collection as QuoteCollection;
+use Magento\Sales\Model\ResourceModel\Collection\ExpiredQuotesCollection;
+use Magento\Store\Model\StoreManagerInterface;
+use Psr\Log\LoggerInterface;
 
 /**
- * Class CleanExpiredQuotes
+ * Cron job for cleaning expired Quotes
  */
 class CleanExpiredQuotes
 {
-    const LIFETIME = 86400;
-
     /**
-     * @var StoresConfig
+     * @var ExpiredQuotesCollection
      */
-    protected $storesConfig;
+    private $expiredQuotesCollection;
 
     /**
-     * @var \Magento\Quote\Model\ResourceModel\Quote\CollectionFactory
+     * @var StoreManagerInterface
      */
-    protected $quoteCollectionFactory;
+    private $storeManager;
 
     /**
-     * @var array
+     * @var CartRepositoryInterface
      */
-    protected $expireQuotesFilterFields = [];
+    private $quoteRepository;
 
     /**
-     * @param StoresConfig $storesConfig
-     * @param \Magento\Quote\Model\ResourceModel\Quote\CollectionFactory $collectionFactory
+     * @var CartInterfaceFactory
+     */
+    private $quoteFactory;
+
+    /**
+     * @var ResourceQuote
+     */
+    private $quoteResource;
+
+    /**
+     * @var QueryGenerator
+     */
+    private $queryGenerator;
+
+    /**
+     * @var LoggerInterface
+     */
+    private $logger;
+
+    /**
+     * @var int
+     */
+    private $batchSize;
+
+    /**
+     * @param StoreManagerInterface $storeManager
+     * @param ExpiredQuotesCollection $expiredQuotesCollection
+     * @param CartRepositoryInterface $quoteRepository
+     * @param CartInterfaceFactory $quoteFactory
+     * @param ResourceQuote $quoteResource
+     * @param QueryGenerator $queryGenerator
+     * @param LoggerInterface $logger
+     * @param int $batchSize
      */
     public function __construct(
-        StoresConfig $storesConfig,
-        \Magento\Quote\Model\ResourceModel\Quote\CollectionFactory $collectionFactory
+        StoreManagerInterface $storeManager,
+        ExpiredQuotesCollection $expiredQuotesCollection,
+        CartRepositoryInterface $quoteRepository,
+        CartInterfaceFactory $quoteFactory,
+        ResourceQuote $quoteResource,
+        QueryGenerator $queryGenerator,
+        LoggerInterface $logger,
+        int $batchSize = 1000
     ) {
-        $this->storesConfig = $storesConfig;
-        $this->quoteCollectionFactory = $collectionFactory;
+        $this->storeManager = $storeManager;
+        $this->expiredQuotesCollection = $expiredQuotesCollection;
+        $this->quoteRepository = $quoteRepository;
+        $this->quoteFactory = $quoteFactory;
+        $this->quoteResource = $quoteResource;
+        $this->queryGenerator = $queryGenerator;
+        $this->logger = $logger;
+        $this->batchSize = $batchSize;
     }
 
     /**
@@ -48,43 +98,43 @@ class CleanExpiredQuotes
      */
     public function execute()
     {
-        $lifetimes = $this->storesConfig->getStoresConfigByPath('checkout/cart/delete_quote_after');
-        foreach ($lifetimes as $storeId => $lifetime) {
-            $lifetime *= self::LIFETIME;
+        $stores = $this->storeManager->getStores(true);
+        foreach ($stores as $store) {
+            /** @var QuoteCollection $quoteCollection */
+            $quoteCollection = $this->expiredQuotesCollection->getExpiredQuotes($store);
 
-            /** @var $quotes \Magento\Quote\Model\ResourceModel\Quote\Collection */
-            $quotes = $this->quoteCollectionFactory->create();
-
-            $quotes->addFieldToFilter('store_id', $storeId);
-            $quotes->addFieldToFilter('updated_at', ['to' => date("Y-m-d", time() - $lifetime)]);
-            $quotes->addFieldToFilter('is_active', 0);
-
-            foreach ($this->getExpireQuotesAdditionalFilterFields() as $field => $condition) {
-                $quotes->addFieldToFilter($field, $condition);
+            $select = $quoteCollection->getSelect()
+                ->reset(Select::COLUMNS)
+                ->columns(['main_table.' . $this->quoteResource->getIdFieldName()]);
+            $queries = $this->queryGenerator->generate(
+                $this->quoteResource->getIdFieldName(),
+                $select,
+                $this->batchSize
+            );
+            foreach ($queries as $query) {
+                $this->deleteQuotes($query);
             }
-
-            $quotes->walk('delete');
         }
     }
 
     /**
-     * Retrieve expire quotes additional fields to filter
+     * Deletes all quotes from select
      *
-     * @return array
+     * @param Select $query
      */
-    protected function getExpireQuotesAdditionalFilterFields()
+    private function deleteQuotes(Select $query): void
     {
-        return $this->expireQuotesFilterFields;
-    }
+        $quoteIds = $this->quoteResource->getConnection()->fetchCol($query);
+        foreach ($quoteIds as $quoteId) {
+            $quote = $this->quoteFactory->create();
+            $quote->setId((int) $quoteId);
 
-    /**
-     * Set expire quotes additional fields to filter
-     *
-     * @param array $fields
-     * @return void
-     */
-    public function setExpireQuotesAdditionalFilterFields(array $fields)
-    {
-        $this->expireQuotesFilterFields = $fields;
+            try {
+                $this->quoteRepository->delete($quote);
+            } catch (Exception $e) {
+                $message = sprintf('Unable to delete expired quote (ID: %s)', $quoteId);
+                $this->logger->error($message, ['exception' => $e]);
+            }
+        }
     }
 }

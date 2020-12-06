@@ -8,6 +8,7 @@ namespace Magento\Catalog\Api\Data;
 
 /**
  * @api
+ * @since 100.0.2
  */
 interface ProductAttributeInterface extends \Magento\Catalog\Api\Data\EavAttributeInterface
 {
@@ -31,4 +32,12 @@ interface ProductAttributeInterface extends \Magento\Catalog\Api\Data\EavAttribu
     const CODE_TIER_PRICE_FIELD_VALUE_TYPE = 'value_type';
     const CODE_SEO_FIELD_META_DESCRIPTION = 'meta_description';
     const CODE_WEIGHT = 'weight';
+
+    /**
+     * Get extension attributes
+     *
+     * @return \Magento\Eav\Api\Data\AttributeExtensionInterface|null
+     * @since 103.0.0
+     */
+    public function getExtensionAttributes();
 }

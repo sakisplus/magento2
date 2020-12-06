@@ -7,12 +7,15 @@ namespace Magento\Braintree\Gateway\Request;
 
 use Magento\Braintree\Gateway\Config\Config;
 use Magento\Payment\Gateway\Data\OrderAdapterInterface;
-use Magento\Braintree\Gateway\Helper\SubjectReader;
+use Magento\Braintree\Gateway\SubjectReader;
 use Magento\Payment\Gateway\Request\BuilderInterface;
 use Magento\Payment\Helper\Formatter;
 
 /**
  * Class ThreeDSecureDataBuilder
+ *
+ * @deprecated Starting from Magento 2.3.6 Braintree payment method core integration is deprecated
+ * in favor of official payment integration available on the marketplace
  */
 class ThreeDSecureDataBuilder implements BuilderInterface
 {
@@ -64,12 +67,15 @@ class ThreeDSecureDataBuilder implements BuilderInterface
      */
     private function is3DSecureEnabled(OrderAdapterInterface $order, $amount)
     {
-        if (!$this->config->isVerify3DSecure() || $amount < $this->config->getThresholdAmount()) {
+        $storeId = $order->getStoreId();
+        if (!$this->config->isVerify3DSecure($storeId)
+            || $amount < $this->config->getThresholdAmount($storeId)
+        ) {
             return false;
         }
 
         $billingAddress = $order->getBillingAddress();
-        $specificCounties = $this->config->get3DSecureSpecificCountries();
+        $specificCounties = $this->config->get3DSecureSpecificCountries($storeId);
         if (!empty($specificCounties) && !in_array($billingAddress->getCountryId(), $specificCounties)) {
             return false;
         }

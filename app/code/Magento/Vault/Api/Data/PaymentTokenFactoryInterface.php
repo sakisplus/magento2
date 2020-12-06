@@ -9,6 +9,7 @@ namespace Magento\Vault\Api\Data;
 /**
  * Interface PaymentTokenFactoryInterface
  * @api
+ * @since 101.0.0
  */
 interface PaymentTokenFactoryInterface
 {
@@ -23,6 +24,7 @@ interface PaymentTokenFactoryInterface
      * Create payment token entity
      * @param $type string|null
      * @return PaymentTokenInterface
+     * @since 101.0.0
      */
     public function create($type = null);
 }

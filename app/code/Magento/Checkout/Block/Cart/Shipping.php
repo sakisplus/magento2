@@ -8,6 +8,7 @@ namespace Magento\Checkout\Block\Cart;
 /**
  * @api
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @since 100.0.2
  */
 class Shipping extends \Magento\Checkout\Block\Cart\AbstractCart
 {
@@ -74,7 +75,8 @@ class Shipping extends \Magento\Checkout\Block\Cart\AbstractCart
         foreach ($this->layoutProcessors as $processor) {
             $this->jsLayout = $processor->process($this->jsLayout);
         }
-        return $this->serializer->serialize($this->jsLayout);
+
+        return json_encode($this->jsLayout, JSON_HEX_TAG);
     }
 
     /**
@@ -90,9 +92,10 @@ class Shipping extends \Magento\Checkout\Block\Cart\AbstractCart
 
     /**
      * @return bool|string
+     * @since 100.2.0
      */
     public function getSerializedCheckoutConfig()
     {
-        return $this->serializer->serialize($this->getCheckoutConfig());
+        return json_encode($this->getCheckoutConfig(), JSON_HEX_TAG);
     }
 }

@@ -9,6 +9,7 @@ namespace Magento\Store\Api\Data;
  * Store interface
  *
  * @api
+ * @since 100.0.2
  */
 interface StoreInterface extends \Magento\Framework\Api\ExtensibleDataInterface
 {
@@ -64,6 +65,19 @@ interface StoreInterface extends \Magento\Framework\Api\ExtensibleDataInterface
      * @return int
      */
     public function getStoreGroupId();
+
+    /**
+     * @param int $isActive
+     * @return $this
+     * @since 101.0.0
+     */
+    public function setIsActive($isActive);
+
+    /**
+     * @return int
+     * @since 101.0.0
+     */
+    public function getIsActive();
 
     /**
      * @param int $storeGroupId

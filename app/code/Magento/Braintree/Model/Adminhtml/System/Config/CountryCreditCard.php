@@ -17,6 +17,9 @@ use Magento\Framework\Serialize\Serializer\Json;
 
 /**
  * Class CountryCreditCard
+ *
+ * @deprecated Starting from Magento 2.3.6 Braintree payment method core integration is deprecated
+ * in favor of official payment integration available on the marketplace
  */
 class CountryCreditCard extends Value
 {
@@ -66,6 +69,13 @@ class CountryCreditCard extends Value
     public function beforeSave()
     {
         $value = $this->getValue();
+        if (!is_array($value)) {
+            try {
+                $value = $this->serializer->unserialize($value);
+            } catch (\InvalidArgumentException $e) {
+                $value = [];
+            }
+        }
         $result = [];
         foreach ($value as $data) {
             if (empty($data['country_id']) || empty($data['cc_types'])) {

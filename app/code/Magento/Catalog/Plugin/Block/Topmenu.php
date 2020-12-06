@@ -3,6 +3,8 @@
  * Copyright © Magento, Inc. All rights reserved.
  * See COPYING.txt for license details.
  */
+declare(strict_types=1);
+
 namespace Magento\Catalog\Plugin\Block;
 
 use Magento\Catalog\Model\Category;
@@ -22,7 +24,7 @@ class Topmenu
     protected $catalogCategory;
 
     /**
-     * @var \Magento\Catalog\Model\ResourceModel\Category\CollectionFactory
+     * @var \Magento\Catalog\Model\ResourceModel\Category\StateDependentCollectionFactory
      */
     private $collectionFactory;
 
@@ -40,13 +42,13 @@ class Topmenu
      * Initialize dependencies.
      *
      * @param \Magento\Catalog\Helper\Category $catalogCategory
-     * @param \Magento\Catalog\Model\ResourceModel\Category\CollectionFactory $categoryCollectionFactory
+     * @param \Magento\Catalog\Model\ResourceModel\Category\StateDependentCollectionFactory $categoryCollectionFactory
      * @param \Magento\Store\Model\StoreManagerInterface $storeManager
      * @param \Magento\Catalog\Model\Layer\Resolver $layerResolver
      */
     public function __construct(
         \Magento\Catalog\Helper\Category $catalogCategory,
-        \Magento\Catalog\Model\ResourceModel\Category\CollectionFactory $categoryCollectionFactory,
+        \Magento\Catalog\Model\ResourceModel\Category\StateDependentCollectionFactory $categoryCollectionFactory,
         \Magento\Store\Model\StoreManagerInterface $storeManager,
         \Magento\Catalog\Model\Layer\Resolver $layerResolver
     ) {
@@ -93,7 +95,11 @@ class Topmenu
             $parentCategoryNode = $mapping[$categoryParentId];
 
             $categoryNode = new Node(
-                $this->getCategoryAsArray($category, $currentCategory),
+                $this->getCategoryAsArray(
+                    $category,
+                    $currentCategory,
+                    $category->getParentId() == $categoryParentId
+                ),
                 'id',
                 $parentCategoryNode->getTree(),
                 $parentCategoryNode
@@ -147,16 +153,20 @@ class Topmenu
      *
      * @param \Magento\Catalog\Model\Category $category
      * @param \Magento\Catalog\Model\Category $currentCategory
+     * @param bool $isParentActive
      * @return array
      */
-    private function getCategoryAsArray($category, $currentCategory)
+    private function getCategoryAsArray($category, $currentCategory, $isParentActive)
     {
+        $categoryId = $category->getId();
         return [
             'name' => $category->getName(),
-            'id' => 'category-node-' . $category->getId(),
+            'id' => 'category-node-' . $categoryId,
             'url' => $this->catalogCategory->getCategoryUrl($category),
-            'has_active' => in_array((string)$category->getId(), explode('/', $currentCategory->getPath()), true),
-            'is_active' => $category->getId() == $currentCategory->getId()
+            'has_active' => in_array((string)$categoryId, explode('/', (string)$currentCategory->getPath()), true),
+            'is_active' => $categoryId == $currentCategory->getId(),
+            'is_category' => true,
+            'is_parent_active' => $isParentActive
         ];
     }
 
@@ -177,6 +187,7 @@ class Topmenu
         $collection->addFieldToFilter('path', ['like' => '1/' . $rootId . '/%']); //load only from store root
         $collection->addAttributeToFilter('include_in_menu', 1);
         $collection->addIsActiveFilter();
+        $collection->addNavigationMaxDepthFilter();
         $collection->addUrlRewriteToResult();
         $collection->addOrder('level', Collection::SORT_ORDER_ASC);
         $collection->addOrder('position', Collection::SORT_ORDER_ASC);
@@ -184,5 +195,23 @@ class Topmenu
         $collection->addOrder('entity_id', Collection::SORT_ORDER_ASC);
 
         return $collection;
+    }
+
+    /**
+     * Add active
+     *
+     * @param \Magento\Theme\Block\Html\Topmenu $subject
+     * @param string[] $result
+     * @return string[]
+     * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+     */
+    public function afterGetCacheKeyInfo(\Magento\Theme\Block\Html\Topmenu $subject, array $result)
+    {
+        $activeCategory = $this->getCurrentCategory();
+        if ($activeCategory) {
+            $result[] = Category::CACHE_TAG . '_' . $activeCategory->getId();
+        }
+
+        return $result;
     }
 }

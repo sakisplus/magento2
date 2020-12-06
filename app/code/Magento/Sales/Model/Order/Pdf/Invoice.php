@@ -19,9 +19,9 @@ class Invoice extends AbstractPdf
     protected $_storeManager;
 
     /**
-     * @var \Magento\Framework\Locale\ResolverInterface
+     * @var \Magento\Store\Model\App\Emulation
      */
-    protected $_localeResolver;
+    private $appEmulation;
 
     /**
      * @param \Magento\Payment\Helper\Data $paymentData
@@ -35,7 +35,7 @@ class Invoice extends AbstractPdf
      * @param \Magento\Framework\Translate\Inline\StateInterface $inlineTranslation
      * @param \Magento\Sales\Model\Order\Address\Renderer $addressRenderer
      * @param \Magento\Store\Model\StoreManagerInterface $storeManager
-     * @param \Magento\Framework\Locale\ResolverInterface $localeResolver
+     * @param \Magento\Store\Model\App\Emulation $appEmulation
      * @param array $data
      *
      * @SuppressWarnings(PHPMD.ExcessiveParameterList)
@@ -52,11 +52,11 @@ class Invoice extends AbstractPdf
         \Magento\Framework\Translate\Inline\StateInterface $inlineTranslation,
         \Magento\Sales\Model\Order\Address\Renderer $addressRenderer,
         \Magento\Store\Model\StoreManagerInterface $storeManager,
-        \Magento\Framework\Locale\ResolverInterface $localeResolver,
+        \Magento\Store\Model\App\Emulation $appEmulation,
         array $data = []
     ) {
         $this->_storeManager = $storeManager;
-        $this->_localeResolver = $localeResolver;
+        $this->appEmulation = $appEmulation;
         parent::__construct(
             $paymentData,
             $string,
@@ -82,12 +82,12 @@ class Invoice extends AbstractPdf
     {
         /* Add table head */
         $this->_setFontRegular($page, 10);
-        $page->setFillColor(new \Zend_Pdf_Color_RGB(0.93, 0.92, 0.92));
+        $page->setFillColor(new \Zend_Pdf_Color_Rgb(0.93, 0.92, 0.92));
         $page->setLineColor(new \Zend_Pdf_Color_GrayScale(0.5));
         $page->setLineWidth(0.5);
         $page->drawRectangle(25, $this->y, 570, $this->y - 15);
         $this->y -= 10;
-        $page->setFillColor(new \Zend_Pdf_Color_RGB(0, 0, 0));
+        $page->setFillColor(new \Zend_Pdf_Color_Rgb(0, 0, 0));
 
         //columns headers
         $lines[0][] = ['text' => __('Products'), 'feed' => 35];
@@ -127,7 +127,11 @@ class Invoice extends AbstractPdf
 
         foreach ($invoices as $invoice) {
             if ($invoice->getStoreId()) {
-                $this->_localeResolver->emulate($invoice->getStoreId());
+                $this->appEmulation->startEnvironmentEmulation(
+                    $invoice->getStoreId(),
+                    \Magento\Framework\App\Area::AREA_FRONTEND,
+                    true
+                );
                 $this->_storeManager->setCurrentStore($invoice->getStoreId());
             }
             $page = $this->newPage();
@@ -162,7 +166,7 @@ class Invoice extends AbstractPdf
             /* Add totals */
             $this->insertTotals($page, $invoice);
             if ($invoice->getStoreId()) {
-                $this->_localeResolver->revert();
+                $this->appEmulation->stopEnvironmentEmulation();
             }
         }
         $this->_afterGetPdf();

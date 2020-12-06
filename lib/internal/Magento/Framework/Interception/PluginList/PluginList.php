@@ -30,7 +30,7 @@ class PluginList extends Scoped implements InterceptionPluginList
      *
      * @var array
      */
-    protected $_inherited;
+    protected $_inherited = [];
 
     /**
      * Inherited plugin data, preprocessed for read
@@ -138,7 +138,7 @@ class PluginList extends Scoped implements InterceptionPluginList
     protected function _inheritPlugins($type)
     {
         $type = ltrim($type, '\\');
-        if (!array_key_exists($type, $this->_inherited)) {
+        if (!isset($this->_inherited[$type])) {
             $realType = $this->_omConfig->getOriginalInstanceType($type);
 
             if ($realType !== $type) {
@@ -268,7 +268,7 @@ class PluginList extends Scoped implements InterceptionPluginList
             $this->_inheritPlugins($type);
         }
         $key = $type . '_' . lcfirst($method) . '_' . $code;
-        return isset($this->_processed[$key]) ? $this->_processed[$key] : null;
+        return $this->_processed[$key] ?? null;
     }
 
     /**
@@ -281,9 +281,18 @@ class PluginList extends Scoped implements InterceptionPluginList
     {
         $scope = $this->_configScope->getCurrentScope();
         if (false == isset($this->_loadedScopes[$scope])) {
-            if (false == in_array($scope, $this->_scopePriorityScheme)) {
-                $this->_scopePriorityScheme[] = $scope;
+            $index = array_search($scope, $this->_scopePriorityScheme);
+            /**
+             * Force current scope to be at the end of the scheme to ensure that default priority scopes are loaded.
+             * Mostly happens when the current scope is primary.
+             * For instance if the default scope priority scheme is [primary, global] and current scope is primary,
+             * the resulted scheme will be [global, primary] so global scope is loaded.
+             */
+            if ($index !== false) {
+                unset($this->_scopePriorityScheme[$index]);
             }
+            $this->_scopePriorityScheme[] = $scope;
+
             $cacheId = implode('|', $this->_scopePriorityScheme) . "|" . $this->_cacheId;
             $data = $this->_cache->load($cacheId);
             if ($data) {
@@ -292,28 +301,7 @@ class PluginList extends Scoped implements InterceptionPluginList
                     $this->_loadedScopes[$scopeCode] = true;
                 }
             } else {
-                $virtualTypes = [];
-                foreach ($this->_scopePriorityScheme as $scopeCode) {
-                    if (false == isset($this->_loadedScopes[$scopeCode])) {
-                        $data = $this->_reader->read($scopeCode);
-                        unset($data['preferences']);
-                        if (count($data) > 0) {
-                            $this->_inherited = [];
-                            $this->_processed = [];
-                            $this->merge($data);
-                            foreach ($data as $class => $config) {
-                                if (isset($config['type'])) {
-                                    $virtualTypes[] = $class;
-                                }
-                            }
-                        }
-                        $this->_loadedScopes[$scopeCode] = true;
-                    }
-                    if ($this->isCurrentScope($scopeCode)) {
-                        break;
-                    }
-                }
-                foreach ($virtualTypes as $class) {
+                foreach ($this->_loadScopedVirtualTypes() as $class) {
                     $this->_inheritPlugins($class);
                 }
                 foreach ($this->getClassDefinitions() as $class) {
@@ -326,6 +314,37 @@ class PluginList extends Scoped implements InterceptionPluginList
             }
             $this->_pluginInstances = [];
         }
+    }
+
+    /**
+     * Load virtual types for current scope
+     *
+     * @return array
+     */
+    private function _loadScopedVirtualTypes()
+    {
+        $virtualTypes = [];
+        foreach ($this->_scopePriorityScheme as $scopeCode) {
+            if (!isset($this->_loadedScopes[$scopeCode])) {
+                $data = $this->_reader->read($scopeCode) ?: [];
+                unset($data['preferences']);
+                if (count($data) > 0) {
+                    $this->_inherited = [];
+                    $this->_processed = [];
+                    $this->merge($data);
+                    foreach ($data as $class => $config) {
+                        if (isset($config['type'])) {
+                            $virtualTypes[] = $class;
+                        }
+                    }
+                }
+                $this->_loadedScopes[$scopeCode] = true;
+            }
+            if ($this->isCurrentScope($scopeCode)) {
+                break;
+            }
+        }
+        return $virtualTypes;
     }
 
     /**
@@ -389,7 +408,7 @@ class PluginList extends Scoped implements InterceptionPluginList
      * Get logger
      *
      * @return \Psr\Log\LoggerInterface
-     * @deprecated
+     * @deprecated 101.0.0
      */
     private function getLogger()
     {

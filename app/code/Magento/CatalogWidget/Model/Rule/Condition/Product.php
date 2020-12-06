@@ -9,10 +9,14 @@
  */
 namespace Magento\CatalogWidget\Model\Rule\Condition;
 
+use Magento\Catalog\Api\Data\ProductInterface;
 use Magento\Catalog\Model\ProductCategoryList;
+use Magento\Catalog\Model\ResourceModel\Product\Collection;
+use Magento\Store\Model\Store;
 
 /**
- * Class Product
+ * Rule product condition data model
+ *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
 class Product extends \Magento\Rule\Model\Condition\Product\AbstractProduct
@@ -77,17 +81,22 @@ class Product extends \Magento\Rule\Model\Condition\Product\AbstractProduct
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritdoc
      */
     public function loadAttributeOptions()
     {
         $productAttributes = $this->_productResource->loadAllAttributes()->getAttributesByCode();
+        $productAttributes = array_filter(
+            $productAttributes,
+            function ($attribute) {
+                return $attribute->getFrontendLabel() &&
+                    $attribute->getFrontendInput() !== 'text' &&
+                    $attribute->getAttributeCode() !== ProductInterface::STATUS;
+            }
+        );
 
         $attributes = [];
         foreach ($productAttributes as $attribute) {
-            if (!$attribute->getFrontendLabel() || $attribute->getFrontendInput() == 'text') {
-                continue;
-            }
             $attributes[$attribute->getAttributeCode()] = $attribute->getFrontendLabel();
         }
 
@@ -100,7 +109,10 @@ class Product extends \Magento\Rule\Model\Condition\Product\AbstractProduct
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritdoc
+     *
+     * @param array &$attributes
+     * @return void
      */
     protected function _addSpecialAttributes(array &$attributes)
     {
@@ -111,47 +123,48 @@ class Product extends \Magento\Rule\Model\Condition\Product\AbstractProduct
     /**
      * Add condition to collection
      *
-     * @param \Magento\Catalog\Model\ResourceModel\Product\Collection $collection
+     * @param Collection $collection
      * @return $this
      */
     public function addToCollection($collection)
     {
         $attribute = $this->getAttributeObject();
+        $attributeCode = $attribute->getAttributeCode();
+        if ($attributeCode !== 'price' || !$collection->getLimitationFilters()->isUsingPriceIndex()) {
+            if ($collection->isEnabledFlat()) {
+                if ($attribute->isEnabledInFlat()) {
+                    $alias = array_keys($collection->getSelect()->getPart('from'))[0];
+                    $this->joinedAttributes[$attributeCode] = $alias . '.' . $attributeCode;
+                } else {
+                    $alias = 'at_' . $attributeCode;
+                    if (!in_array($alias, array_keys($collection->getSelect()->getPart('from')))) {
+                        $collection->joinAttribute($attributeCode, "catalog_product/$attributeCode", 'entity_id');
+                    }
 
-        if ($collection->isEnabledFlat()) {
-            $alias = array_keys($collection->getSelect()->getPart('from'))[0];
-            $this->joinedAttributes[$attribute->getAttributeCode()] = $alias . '.' . $attribute->getAttributeCode();
-            return $this;
+                    $this->joinedAttributes[$attributeCode] = $alias . '.value';
+                }
+            } elseif ($attributeCode !== 'category_ids' && !$attribute->isStatic()) {
+                $this->addAttributeToCollection($attribute, $collection);
+                $attributes = $this->getRule()->getCollectedAttributes();
+                $attributes[$attributeCode] = true;
+                $this->getRule()->setCollectedAttributes($attributes);
+            }
         }
-
-        if ('category_ids' == $attribute->getAttributeCode() || $attribute->isStatic()) {
-            return $this;
-        }
-
-        if ($attribute->getBackend() && $attribute->isScopeGlobal()) {
-            $this->addGlobalAttribute($attribute, $collection);
-        } else {
-            $this->addNotGlobalAttribute($attribute, $collection);
-        }
-
-        $attributes = $this->getRule()->getCollectedAttributes();
-        $attributes[$attribute->getAttributeCode()] = true;
-        $this->getRule()->setCollectedAttributes($attributes);
 
         return $this;
     }
 
     /**
+     * Adds Attributes that belong to Global Scope
+     *
      * @param \Magento\Catalog\Model\ResourceModel\Eav\Attribute $attribute
-     * @param \Magento\Catalog\Model\ResourceModel\Product\Collection $collection
+     * @param Collection $collection
      * @return $this
      */
     protected function addGlobalAttribute(
         \Magento\Catalog\Model\ResourceModel\Eav\Attribute $attribute,
-        \Magento\Catalog\Model\ResourceModel\Product\Collection $collection
+        Collection $collection
     ) {
-        $storeId =  $this->storeManager->getStore()->getId();
-
         switch ($attribute->getBackendType()) {
             case 'decimal':
             case 'datetime':
@@ -160,10 +173,15 @@ class Product extends \Magento\Rule\Model\Condition\Product\AbstractProduct
                 $collection->addAttributeToSelect($attribute->getAttributeCode(), 'inner');
                 break;
             default:
-                $alias = 'at_' . md5($this->getId()) . $attribute->getAttributeCode();
+                $alias = 'at_' . sha1($this->getId()) . $attribute->getAttributeCode();
+
+                $connection = $this->_productResource->getConnection();
+                $storeId = $connection->getIfNullSql($alias . '.store_id', $this->storeManager->getStore()->getId());
+                $linkField = $attribute->getEntity()->getLinkField();
+
                 $collection->getSelect()->join(
-                    [$alias => $collection->getTable('catalog_product_index_eav')],
-                    "($alias.entity_id = e.entity_id) AND ($alias.store_id = $storeId)" .
+                    [$alias => $collection->getTable('catalog_product_entity_varchar')],
+                    "($alias.$linkField = e.$linkField) AND ($alias.store_id = $storeId)" .
                     " AND ($alias.attribute_id = {$attribute->getId()})",
                     []
                 );
@@ -175,15 +193,17 @@ class Product extends \Magento\Rule\Model\Condition\Product\AbstractProduct
     }
 
     /**
+     * Adds Attributes that don't belong to Global Scope
+     *
      * @param \Magento\Catalog\Model\ResourceModel\Eav\Attribute $attribute
-     * @param \Magento\Catalog\Model\ResourceModel\Product\Collection $collection
+     * @param Collection $collection
      * @return $this
      */
     protected function addNotGlobalAttribute(
         \Magento\Catalog\Model\ResourceModel\Eav\Attribute $attribute,
-        \Magento\Catalog\Model\ResourceModel\Product\Collection $collection
+        Collection $collection
     ) {
-        $storeId =  $this->storeManager->getStore()->getId();
+        $storeId = $this->storeManager->getStore()->getId();
         $values = $collection->getAllAttributeValues($attribute);
         $validEntities = [];
         if ($values) {
@@ -193,7 +213,9 @@ class Product extends \Magento\Rule\Model\Condition\Product\AbstractProduct
                         $validEntities[] = $entityId;
                     }
                 } else {
-                    if ($this->validateAttribute($storeValues[\Magento\Store\Model\Store::DEFAULT_STORE_ID])) {
+                    if (isset($storeValues[Store::DEFAULT_STORE_ID]) &&
+                        $this->validateAttribute($storeValues[Store::DEFAULT_STORE_ID])
+                    ) {
                         $validEntities[] = $entityId;
                     }
                 }
@@ -211,15 +233,19 @@ class Product extends \Magento\Rule\Model\Condition\Product\AbstractProduct
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritdoc
+     *
+     * @return string
      */
     public function getMappedSqlField()
     {
         $result = '';
-        if (in_array($this->getAttribute(), ['category_ids', 'sku'])) {
+        if (in_array($this->getAttribute(), ['category_ids', 'sku', 'attribute_set_id'])) {
             $result = parent::getMappedSqlField();
         } elseif (isset($this->joinedAttributes[$this->getAttribute()])) {
             $result = $this->joinedAttributes[$this->getAttribute()];
+        } elseif ($this->getAttribute() === 'price') {
+            $result = 'price_index.min_price';
         } elseif ($this->getAttributeObject()->isStatic()) {
             $result = $this->getAttributeObject()->getAttributeCode();
         } elseif ($this->getValueParsed()) {
@@ -230,10 +256,29 @@ class Product extends \Magento\Rule\Model\Condition\Product\AbstractProduct
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritdoc
+     *
+     * @param Collection $productCollection
+     * @return $this
      */
     public function collectValidatedAttributes($productCollection)
     {
         return $this->addToCollection($productCollection);
+    }
+
+    /**
+     * Add attribute to collection based on scope
+     *
+     * @param \Magento\Catalog\Model\ResourceModel\Eav\Attribute $attribute
+     * @param Collection $collection
+     * @return void
+     */
+    private function addAttributeToCollection($attribute, $collection): void
+    {
+        if ($attribute->getBackend() && $attribute->isScopeGlobal()) {
+            $this->addGlobalAttribute($attribute, $collection);
+        } else {
+            $this->addNotGlobalAttribute($attribute, $collection);
+        }
     }
 }

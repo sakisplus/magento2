@@ -4,14 +4,13 @@
  * See COPYING.txt for license details.
  */
 
-// @codingStandardsIgnoreFile
-
 namespace Magento\SalesRule\Block\Adminhtml\Promo\Quote\Edit\Tab\Coupons;
 
 /**
  * Coupon codes grid
  *
  * @api
+ * @since 100.0.2
  */
 class Grid extends \Magento\Backend\Block\Widget\Grid\Extended
 {
@@ -47,9 +46,7 @@ class Grid extends \Magento\Backend\Block\Widget\Grid\Extended
     }
 
     /**
-     * Constructor
-     *
-     * @return void
+     * @inheritdoc
      */
     protected function _construct()
     {
@@ -59,9 +56,7 @@ class Grid extends \Magento\Backend\Block\Widget\Grid\Extended
     }
 
     /**
-     * Prepare collection for grid
-     *
-     * @return $this
+     * @inheritdoc
      */
     protected function _prepareCollection()
     {
@@ -72,15 +67,20 @@ class Grid extends \Magento\Backend\Block\Widget\Grid\Extended
          */
         $collection = $this->_salesRuleCoupon->create()->addRuleToFilter($priceRule)->addGeneratedCouponsFilter();
 
+        if ($this->_isExport && $this->getMassactionBlock()->isAvailable()) {
+            $itemIds = $this->getMassactionBlock()->getSelected();
+            if (!empty($itemIds)) {
+                $collection->addFieldToFilter('coupon_id', ['in' => $itemIds]);
+            }
+        }
+
         $this->setCollection($collection);
 
         return parent::_prepareCollection();
     }
 
     /**
-     * Define grid columns
-     *
-     * @return $this
+     * @inheritdoc
      */
     protected function _prepareColumns()
     {
@@ -100,12 +100,13 @@ class Grid extends \Magento\Backend\Block\Widget\Grid\Extended
         $this->addColumn(
             'used',
             [
-                'header' => __('Uses'),
+                'header' => __('Used'),
                 'index' => 'times_used',
                 'width' => '100',
                 'type' => 'options',
                 'options' => [__('No'), __('Yes')],
-                'renderer' => \Magento\SalesRule\Block\Adminhtml\Promo\Quote\Edit\Tab\Coupons\Grid\Column\Renderer\Used::class,
+                'renderer' =>
+                    \Magento\SalesRule\Block\Adminhtml\Promo\Quote\Edit\Tab\Coupons\Grid\Column\Renderer\Used::class,
                 'filter_condition_callback' => [$this->_salesRuleCoupon->create(), 'addIsUsedFilterCallback']
             ]
         );
@@ -121,9 +122,7 @@ class Grid extends \Magento\Backend\Block\Widget\Grid\Extended
     }
 
     /**
-     * Configure grid mass actions
-     *
-     * @return $this
+     * @inheritdoc
      */
     protected function _prepareMassaction()
     {
@@ -146,9 +145,7 @@ class Grid extends \Magento\Backend\Block\Widget\Grid\Extended
     }
 
     /**
-     * Get grid url
-     *
-     * @return string
+     * @inheritdoc
      */
     public function getGridUrl()
     {

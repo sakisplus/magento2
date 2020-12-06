@@ -9,6 +9,7 @@ namespace Magento\Framework\Stdlib;
  * Utility methods for the boolean data type
  *
  * @api
+ * @since 100.0.2
  */
 class BooleanUtils
 {
@@ -71,6 +72,7 @@ class BooleanUtils
      *
      * @param mixed $value
      * @return mixed
+     * @since 101.0.0
      */
     public function convert($value)
     {

@@ -8,6 +8,7 @@ namespace Magento\Cms\Api\Data;
 /**
  * CMS page interface.
  * @api
+ * @since 100.0.2
  */
 interface PageInterface
 {
@@ -67,6 +68,7 @@ interface PageInterface
      * Get meta title
      *
      * @return string|null
+     * @since 101.0.0
      */
     public function getMetaTitle();
 
@@ -123,6 +125,7 @@ interface PageInterface
      * Get layout update xml
      *
      * @return string|null
+     * @deprecated 103.0.4 Existing updates are applied, new are not accepted.
      */
     public function getLayoutUpdateXml();
 
@@ -143,6 +146,8 @@ interface PageInterface
     /**
      * Get custom layout update xml
      *
+     * @deprecated 103.0.4 Existing updates are applied, new are not accepted.
+     * @see \Magento\Cms\Model\Page\CustomLayout\Data\CustomLayoutSelectedInterface
      * @return string|null
      */
     public function getCustomLayoutUpdateXml();
@@ -205,6 +210,7 @@ interface PageInterface
      *
      * @param string $metaTitle
      * @return \Magento\Cms\Api\Data\PageInterface
+     * @since 101.0.0
      */
     public function setMetaTitle($metaTitle);
 
@@ -269,6 +275,7 @@ interface PageInterface
      *
      * @param string $layoutUpdateXml
      * @return \Magento\Cms\Api\Data\PageInterface
+     * @deprecated 103.0.4 Existing updates are applied, new are not accepted.
      */
     public function setLayoutUpdateXml($layoutUpdateXml);
 
@@ -293,6 +300,8 @@ interface PageInterface
      *
      * @param string $customLayoutUpdateXml
      * @return \Magento\Cms\Api\Data\PageInterface
+     * @deprecated 103.0.4 Existing updates are applied, new are not accepted.
+     * @see \Magento\Cms\Model\Page\CustomLayout\Data\CustomLayoutSelectedInterface
      */
     public function setCustomLayoutUpdateXml($customLayoutUpdateXml);
 

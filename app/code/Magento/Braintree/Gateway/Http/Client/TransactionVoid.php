@@ -5,6 +5,12 @@
  */
 namespace Magento\Braintree\Gateway\Http\Client;
 
+/**
+ * Class TransactionVoid
+ *
+ * @deprecated Starting from Magento 2.3.6 Braintree payment method core integration is deprecated
+ * in favor of official payment integration available on the marketplace
+ */
 class TransactionVoid extends AbstractTransaction
 {
     /**
@@ -14,6 +20,8 @@ class TransactionVoid extends AbstractTransaction
      */
     protected function process(array $data)
     {
-        return $this->adapter->void($data['transaction_id']);
+        $storeId = $data['store_id'] ?? null;
+
+        return $this->adapterFactory->create($storeId)->void($data['transaction_id']);
     }
 }

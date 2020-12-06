@@ -32,11 +32,11 @@ use Magento\Vault\Model\VaultPaymentInterface;
 use PHPUnit_Framework_MockObject_MockObject as MockObject;
 
 /**
- * Class TokensConfigProviderTest
+ * Test for TokensConfigProvider
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
-class TokensConfigProviderTest extends \PHPUnit_Framework_TestCase
+class TokensConfigProviderTest extends \PHPUnit\Framework\TestCase
 {
     /**#@+
      * Global values
@@ -146,12 +146,12 @@ class TokensConfigProviderTest extends \PHPUnit_Framework_TestCase
             ->getMockForAbstractClass();
 
         $this->vaultPayment = $this->getMockForAbstractClass(VaultPaymentInterface::class);
-        
+
         $this->objectManager = new ObjectManager($this);
 
         $this->initStoreMock();
 
-        $this->tokenComponentProvider = $this->getMock(TokenUiComponentProviderInterface::class);
+        $this->tokenComponentProvider = $this->createMock(TokenUiComponentProviderInterface::class);
 
         $this->configProvider = new TokensConfigProvider(
             $this->session,
@@ -197,7 +197,7 @@ class TokensConfigProviderTest extends \PHPUnit_Framework_TestCase
             ->method('getMethodInstance')
             ->with(self::VAULT_PAYMENT_CODE)
             ->willReturn($this->vaultPayment);
-        
+
         $this->vaultPayment->expects(static::once())
             ->method('isActive')
             ->with(self::STORE_ID)
@@ -470,12 +470,12 @@ class TokensConfigProviderTest extends \PHPUnit_Framework_TestCase
      */
     private function initStoreMock()
     {
-        $this->store = $this->getMock(StoreInterface::class);
+        $this->store = $this->createMock(StoreInterface::class);
         $this->store->expects(static::any())
             ->method('getId')
             ->willReturn(self::STORE_ID);
 
-        $this->storeManager = $this->getMock(StoreManagerInterface::class);
+        $this->storeManager = $this->createMock(StoreManagerInterface::class);
         $this->storeManager->expects(static::any())
             ->method('getStore')
             ->with(null)
@@ -512,7 +512,7 @@ class TokensConfigProviderTest extends \PHPUnit_Framework_TestCase
      */
     private function getTokenUiComponentProvider($token)
     {
-        $tokenUiComponent = $this->getMock(TokenUiComponentInterface::class);
+        $tokenUiComponent = $this->createMock(TokenUiComponentInterface::class);
         $this->tokenComponentProvider->expects(static::once())
             ->method('getComponentForToken')
             ->with($token)
@@ -577,12 +577,15 @@ class TokensConfigProviderTest extends \PHPUnit_Framework_TestCase
             '2015-01-01 00:00:00',
             3
         );
+
+        $isVisibleFilter = $this->createExpectedFilter(PaymentTokenInterface::IS_VISIBLE, 1, 4);
+
         $this->filterBuilder->expects(static::once())
             ->method('setConditionType')
             ->with('gt')
             ->willReturnSelf();
 
-        $this->searchCriteriaBuilder->expects(self::exactly(4))
+        $this->searchCriteriaBuilder->expects(self::exactly(5))
             ->method('addFilters')
             ->willReturnMap(
                 [
@@ -590,6 +593,7 @@ class TokensConfigProviderTest extends \PHPUnit_Framework_TestCase
                     [$codeFilter, $this->searchCriteriaBuilder],
                     [$expiresAtFilter, $this->searchCriteriaBuilder],
                     [$isActiveFilter, $this->searchCriteriaBuilder],
+                    [$isVisibleFilter, $this->searchCriteriaBuilder],
                 ]
             );
 

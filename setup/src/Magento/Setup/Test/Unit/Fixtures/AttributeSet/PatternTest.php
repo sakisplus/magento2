@@ -9,7 +9,7 @@ namespace Magento\Setup\Test\Unit\Fixtures\AttributeSet;
 /**
  * @SuppressWarnings(PHPMD)
  */
-class PatternTest extends \PHPUnit_Framework_TestCase
+class PatternTest extends \PHPUnit\Framework\TestCase
 {
     public function testGenerateAttributeSet()
     {
@@ -28,7 +28,7 @@ class PatternTest extends \PHPUnit_Framework_TestCase
                         'frontend_label' => 'Attribute 1',
                         'frontend_input' => 'select',
                         'backend_type' => 1,
-                        'default_option' => 'option 1',
+                        'default_value' => 'option_1',
                         'options' => [
                             'option' => [
                                 [

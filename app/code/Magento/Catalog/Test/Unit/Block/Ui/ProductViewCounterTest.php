@@ -6,24 +6,25 @@
 
 namespace Magento\Catalog\Test\Unit\Block\Ui;
 
-use Magento\Catalog\Model\ProductRepository;
-use Magento\Catalog\Ui\DataProvider\Product\ProductRenderCollectorComposite;
-use Magento\Catalog\Model\ProductRenderFactory;
-use Magento\Framework\EntityManager\Hydrator;
-use Magento\Framework\Serialize\SerializerInterface;
-use Magento\Framework\Url;
-use Magento\Framework\View\Element\Template\Context;
-use Magento\Store\Model\StoreManager;
-use Magento\Store\Model\Store;
-use Magento\Framework\Registry;
 use Magento\Catalog\Api\Data\ProductInterface;
 use Magento\Catalog\Api\Data\ProductRenderInterface;
 use Magento\Catalog\Block\Ui\ProductViewCounter;
+use Magento\Catalog\Model\ProductRenderFactory;
+use Magento\Catalog\Model\ProductRepository;
+use Magento\Catalog\Ui\DataProvider\Product\ProductRenderCollectorComposite;
+use Magento\Framework\App\Config\ScopeConfigInterface;
+use Magento\Framework\EntityManager\Hydrator;
+use Magento\Framework\Registry;
+use Magento\Framework\Serialize\SerializerInterface;
+use Magento\Framework\Url;
+use Magento\Framework\View\Element\Template\Context;
+use Magento\Store\Model\Store;
+use Magento\Store\Model\StoreManager;
 
 /**
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
-class ProductViewCounterTest extends \PHPUnit_Framework_TestCase
+class ProductViewCounterTest extends \PHPUnit\Framework\TestCase
 {
     /**
      * @var \Magento\Catalog\Block\Ui\ProductViewCounter|\PHPUnit_Framework_MockObject_MockObject
@@ -71,6 +72,11 @@ class ProductViewCounterTest extends \PHPUnit_Framework_TestCase
     private $storeManagerMock;
 
     /**
+     * @var ScopeConfigInterface|\PHPUnit_Framework_MockObject_MockObject
+     */
+    private $scopeConfigMock;
+
+    /**
      * @var ProductRenderFactory|\PHPUnit_Framework_MockObject_MockObject
      */
     private $productRenderFactoryMock;
@@ -104,6 +110,9 @@ class ProductViewCounterTest extends \PHPUnit_Framework_TestCase
         $this->storeManagerMock = $this->getMockBuilder(StoreManager::class)
             ->disableOriginalConstructor()
             ->getMock();
+        $this->scopeConfigMock = $this->getMockBuilder(ScopeConfigInterface::class)
+            ->disableOriginalConstructor()
+            ->getMock();
 
         $this->productViewCounter = new ProductViewCounter(
             $this->contextMock,
@@ -114,7 +123,8 @@ class ProductViewCounterTest extends \PHPUnit_Framework_TestCase
             $this->hydratorMock,
             $this->serializeMock,
             $this->urlMock,
-            $this->registryMock
+            $this->registryMock,
+            $this->scopeConfigMock
         );
     }
 

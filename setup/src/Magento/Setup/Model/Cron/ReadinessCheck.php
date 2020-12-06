@@ -11,6 +11,8 @@ use Magento\Setup\Model\BasePackageInfo;
 /**
  * This class is used by setup:cron:run command to check if this command can be run properly. It also checks if PHP
  * version, settings and extensions are correct.
+ *
+ * @deprecated Starting from Magento 2.3.6 Web Setup Wizard is deprecated
  */
 class ReadinessCheck
 {
@@ -35,9 +37,7 @@ class ReadinessCheck
     const KEY_LAST_TIMESTAMP = 'last_timestamp';
     /**#@-*/
 
-    /**
-     * @var \Magento\Setup\Validator\DbValidator
-     */
+    /**#@-*/
     private $dbValidator;
 
     /**
@@ -135,7 +135,7 @@ class ReadinessCheck
             $resultJsonRawData[self::KEY_READINESS_CHECKS][self::KEY_ERROR] = $errorMessage;
             $errorLogMessages[] = $errorMessage;
         }
-        
+
         // Prepare list of magento specific files and directory paths for updater application to check write
         // permissions
         $errorMessage = '';

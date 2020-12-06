@@ -10,10 +10,13 @@ namespace Magento\Backend\Block;
  *
  * @api
  * @SuppressWarnings(PHPMD.NumberOfChildren)
+ * @since 100.0.2
  */
 class Widget extends \Magento\Backend\Block\Template
 {
     /**
+     * Get ID
+     *
      * @return string
      */
     public function getId()
@@ -36,6 +39,8 @@ class Widget extends \Magento\Backend\Block\Template
     }
 
     /**
+     * Get HTML ID
+     *
      * @return string
      */
     public function getHtmlId()
@@ -58,6 +63,8 @@ class Widget extends \Magento\Backend\Block\Template
     }
 
     /**
+     * Prepare Breadcrumbs
+     *
      * @param string $label
      * @param string|null $title
      * @param string|null $link
@@ -83,7 +90,13 @@ class Widget extends \Magento\Backend\Block\Template
         return $this->getLayout()->createBlock(
             \Magento\Backend\Block\Widget\Button::class
         )->setData(
-            ['label' => $label, 'onclick' => $onclick, 'class' => $class, 'type' => 'button', 'id' => $buttonId]
+            [
+                'label' => $this->escapeHtml($label),
+                'onclick' => $onclick,
+                'class' => $class,
+                'type' => 'button',
+                'id' => $buttonId
+            ]
         )->setDataAttribute(
             $dataAttr
         )->toHtml();

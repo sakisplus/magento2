@@ -3,79 +3,130 @@
  * Copyright © Magento, Inc. All rights reserved.
  * See COPYING.txt for license details.
  */
-
-// @codingStandardsIgnoreFile
-
 namespace Magento\Catalog\Test\Unit\Model\Indexer\Product\Price\Plugin;
 
-class CustomerGroupTest extends \PHPUnit_Framework_TestCase
+use Magento\Catalog\Model\Indexer\Product\Price\DimensionModeConfiguration;
+use Magento\Catalog\Model\Indexer\Product\Price\Plugin\CustomerGroup;
+use Magento\Catalog\Model\Indexer\Product\Price\TableMaintainer;
+use Magento\Customer\Api\GroupRepositoryInterface;
+use Magento\Customer\Model\Data\Group;
+use Magento\Customer\Model\Indexer\CustomerGroupDimensionProvider;
+use Magento\Framework\Indexer\DimensionFactory;
+use Magento\Framework\TestFramework\Unit\Helper\ObjectManager;
+use PHPUnit\Framework\MockObject\MockObject;
+
+/**
+ * Test for CustomerGroup plugin
+ */
+class CustomerGroupTest extends \PHPUnit\Framework\TestCase
 {
     /**
-     * @var \Magento\Framework\TestFramework\Unit\Helper\ObjectManager
+     * @var ObjectManager
      */
-    protected $_objectManager;
+    private $objectManager;
 
     /**
-     * @var \Magento\Catalog\Model\Indexer\Product\Price\Plugin\CustomerGroup
+     * @var CustomerGroup
      */
-    protected $_model;
+    private $model;
 
     /**
-     * @var \Magento\Customer\Api\GroupRepositoryInterface|\PHPUnit_Framework_MockObject_MockObject
+     * @var DimensionFactory|MockObject
      */
-    protected $_subjectMock;
+    private $dimensionFactory;
 
     /**
-     * @var \Magento\Framework\Indexer\IndexerRegistry|\PHPUnit_Framework_MockObject_MockObject
+     * @var TableMaintainer|MockObject
      */
-    protected $indexerRegistryMock;
+    private $tableMaintainerMock;
+
+    /**
+     * @var DimensionModeConfiguration|MockObject
+     */
+    private $dimensionModeConfiguration;
+
+    /**
+     * @var \Callable
+     */
+    private $proceedMock;
 
     protected function setUp()
     {
-        $this->_objectManager = new \Magento\Framework\TestFramework\Unit\Helper\ObjectManager($this);
+        $this->objectManager = new ObjectManager($this);
 
-        $this->_subjectMock = $this->getMock(
-            \Magento\Customer\Api\GroupRepositoryInterface::class, [], [], '', false
+        $this->dimensionFactory = $this->createPartialMock(
+            DimensionFactory::class,
+            ['create']
         );
 
-        $indexerMock = $this->getMock(
-            \Magento\Indexer\Model\Indexer::class,
-            ['getId', 'invalidate'],
-            [],
-            '',
-            false
+        $this->dimensionModeConfiguration = $this->createPartialMock(
+            DimensionModeConfiguration::class,
+            ['getDimensionConfiguration']
         );
-        $indexerMock->expects($this->once())->method('invalidate');
-        $this->indexerRegistryMock = $this->getMock(
-            \Magento\Framework\Indexer\IndexerRegistry::class,
-            ['get'],
-            [],
-            '',
-            false
-        );
-        $this->indexerRegistryMock->expects($this->once())
-            ->method('get')
-            ->with(\Magento\Catalog\Model\Indexer\Product\Price\Processor::INDEXER_ID)
-            ->will($this->returnValue($indexerMock));
 
-        $this->_model = $this->_objectManager->getObject(
-            \Magento\Catalog\Model\Indexer\Product\Price\Plugin\CustomerGroup::class,
-            ['indexerRegistry' => $this->indexerRegistryMock]
+        $this->tableMaintainerMock = $this->createPartialMock(
+            TableMaintainer::class,
+            ['createTablesForDimensions']
+        );
+
+        $this->model = $this->objectManager->getObject(
+            CustomerGroup::class,
+            [
+                'dimensionFactory' => $this->dimensionFactory,
+                'dimensionModeConfiguration' => $this->dimensionModeConfiguration,
+                'tableMaintainer' => $this->tableMaintainerMock,
+            ]
         );
     }
 
-    public function testAroundDelete()
+    /**
+     * Check of call count createTablesForDimensions() method
+     *
+     * @param $customerGroupId
+     * @param $callTimes
+     *
+     * @dataProvider aroundSaveDataProvider
+     */
+    public function testAroundSave($customerGroupId, $callTimes)
     {
-        $this->assertEquals('return_value', $this->_model->afterDelete($this->_subjectMock, 'return_value'));
+        $subjectMock = $this->createMock(GroupRepositoryInterface::class);
+        $customerGroupMock = $this->createPartialMock(
+            Group::class,
+            ['getId']
+        );
+        $customerGroupMock->method('getId')->willReturn($customerGroupId);
+        $this->tableMaintainerMock->expects(
+            $this->exactly($callTimes)
+        )->method('createTablesForDimensions');
+        $this->proceedMock = function ($customerGroupMock) {
+            return $customerGroupMock;
+        };
+        $this->dimensionModeConfiguration->method('getDimensionConfiguration')->willReturn(
+            [CustomerGroupDimensionProvider::DIMENSION_NAME]
+        );
+        $this->model->aroundSave($subjectMock, $this->proceedMock, $customerGroupMock);
     }
 
-    public function testAroundDeleteById()
+    /**
+     * Data provider for testAroundSave
+     *
+     * @return array
+     */
+    public function aroundSaveDataProvider()
     {
-        $this->assertEquals('return_value', $this->_model->afterDeleteById($this->_subjectMock, 'return_value'));
-    }
-
-    public function testAroundSave()
-    {
-        $this->assertEquals('return_value', $this->_model->afterSave($this->_subjectMock, 'return_value'));
+        return [
+            'customer_group_id = 0' => [
+                'customer_group_id' => '0',
+                'create_tables_call_times' => 0
+            ],
+            'customer_group_id = 1' => [
+                'customer_group_id' => '1',
+                'create_tables_call_times' => 0
+            ],
+            'customer_group_id = null' => [
+                'customer_group_id' => null,
+                'create_tables_call_times' => 1
+            ],
+        ];
     }
 }

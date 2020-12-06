@@ -7,17 +7,16 @@ namespace Magento\Catalog\Test\Unit\Model\Product\Option\Type;
 
 use Magento\Catalog\Model\Product\Configuration\Item\Option\OptionInterface;
 use Magento\Framework\App\Filesystem\DirectoryList;
-use Magento\Framework\Exception\SerializationException;
 use Magento\Framework\Filesystem;
 use Magento\Framework\Filesystem\Directory\WriteInterface;
 use Magento\Framework\Filesystem\DriverPool;
 
 /**
- * Class FileTest.
+ * Test file option type
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
-class FileTest extends \PHPUnit_Framework_TestCase
+class FileTest extends \PHPUnit\Framework\TestCase
 {
     /**
      * @var \Magento\Framework\TestFramework\Unit\Helper\ObjectManager
@@ -93,12 +92,9 @@ class FileTest extends \PHPUnit_Framework_TestCase
             ->disableOriginalConstructor()
             ->getMock();
 
-        $this->coreFileStorageDatabase = $this->getMock(
+        $this->coreFileStorageDatabase = $this->createPartialMock(
             \Magento\MediaStorage\Helper\File\Storage\Database::class,
-            ['copyFile', 'checkDbUsage'],
-            [],
-            '',
-            false
+            ['copyFile', 'checkDbUsage']
         );
 
         $this->serializer->expects($this->any())
@@ -138,6 +134,14 @@ class FileTest extends \PHPUnit_Framework_TestCase
                 'itemOptionFactory' => $this->itemOptionFactoryMock,
             ]
         );
+    }
+
+    public function testGetFormattedOptionValueWithUnserializedValue()
+    {
+        $fileObject = $this->getFileObject();
+
+        $value = 'some unserialized value, 1, 2.test';
+        $this->assertEquals($value, $fileObject->getFormattedOptionValue($value));
     }
 
     public function testGetCustomizedView()

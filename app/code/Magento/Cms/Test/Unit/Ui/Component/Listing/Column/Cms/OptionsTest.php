@@ -5,7 +5,7 @@
  */
 namespace Magento\Cms\Test\Unit\Ui\Component\Listing\Column\Cms;
 
-class OptionsTest extends \PHPUnit_Framework_TestCase
+class OptionsTest extends \PHPUnit\Framework\TestCase
 {
     /**
      * @var \Magento\Cms\Ui\Component\Listing\Column\Cms\Options
@@ -45,19 +45,13 @@ class OptionsTest extends \PHPUnit_Framework_TestCase
             ->disableOriginalConstructor()
             ->getMock();
 
-        $this->websiteMock = $this->getMock(
-            \Magento\Store\Model\Website::class,
-            ['getId', 'getName'],
-            [],
-            '',
-            false
-        );
+        $this->websiteMock = $this->createPartialMock(\Magento\Store\Model\Website::class, ['getId', 'getName']);
 
-        $this->groupMock = $this->getMock(\Magento\Store\Model\Group::class, [], [], '', false);
+        $this->groupMock = $this->createMock(\Magento\Store\Model\Group::class);
 
-        $this->storeMock = $this->getMock(\Magento\Store\Model\Store::class, [], [], '', false);
+        $this->storeMock = $this->createMock(\Magento\Store\Model\Store::class);
 
-        $this->escaperMock = $this->getMock(\Magento\Framework\Escaper::class, [], [], '', false);
+        $this->escaperMock = $this->createMock(\Magento\Framework\Escaper::class);
 
         $this->options = $objectManager->getObject(
             \Magento\Cms\Ui\Component\Listing\Column\Cms\Options::class,
@@ -77,7 +71,7 @@ class OptionsTest extends \PHPUnit_Framework_TestCase
         $expectedOptions = [
             [
                 'label' => __('All Store Views'),
-                'value' => '0'
+                'value' => '0',
             ],
             [
                 'label' => 'Main Website',
@@ -87,11 +81,14 @@ class OptionsTest extends \PHPUnit_Framework_TestCase
                         'value' => [
                             [
                                 'label' => '        Default Store View',
-                                'value' => '1'
+                                'value' => '1',
+                                '__disableTmpl' => true,
                             ]
-                        ]
+                        ],
+                        '__disableTmpl' => true,
                     ]
-                ]
+                ],
+                '__disableTmpl' => true,
             ]
         ];
 
@@ -109,14 +106,6 @@ class OptionsTest extends \PHPUnit_Framework_TestCase
         $this->storeMock->expects($this->atLeastOnce())->method('getGroupId')->willReturn('1');
         $this->storeMock->expects($this->atLeastOnce())->method('getName')->willReturn('Default Store View');
         $this->storeMock->expects($this->atLeastOnce())->method('getId')->willReturn('1');
-
-        $this->escaperMock->expects($this->atLeastOnce())->method('escapeHtml')->willReturnMap(
-            [
-                ['Default Store View', null, 'Default Store View'],
-                ['Main Website Store', null, 'Main Website Store'],
-                ['Main Website', null, 'Main Website']
-            ]
-        );
 
         $this->assertEquals($expectedOptions, $this->options->toOptionArray());
     }

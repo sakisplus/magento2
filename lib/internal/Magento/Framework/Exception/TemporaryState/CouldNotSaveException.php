@@ -13,6 +13,7 @@ use Magento\Framework\Phrase;
  * CouldNotSaveException caused by recoverable error
  *
  * @api
+ * @since 101.0.0
  */
 class CouldNotSaveException extends LocalizedCouldNotSaveException implements TemporaryStateExceptionInterface
 {

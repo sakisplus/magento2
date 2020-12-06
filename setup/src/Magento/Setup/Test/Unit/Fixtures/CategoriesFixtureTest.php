@@ -12,8 +12,9 @@ use Magento\Catalog\Model\ResourceModel\Category\CollectionFactory;
 use Magento\Framework\TestFramework\Unit\Helper\ObjectManager;
 use Magento\Setup\Fixtures\CategoriesFixture;
 use Magento\Setup\Fixtures\FixtureModel;
+use Magento\Store\Model\Store;
 
-class CategoriesFixtureTest extends \PHPUnit_Framework_TestCase
+class CategoriesFixtureTest extends \PHPUnit\Framework\TestCase
 {
     /**
      * @var \PHPUnit_Framework_MockObject_MockObject|FixtureModel
@@ -40,12 +41,15 @@ class CategoriesFixtureTest extends \PHPUnit_Framework_TestCase
      */
     private $categoryFactoryMock;
 
-    public function setUp()
+    /**
+     * @inhertidoc
+     */
+    protected function setUp()
     {
-        $this->fixtureModelMock = $this->getMock(FixtureModel::class, [], [], '', false);
-        $this->collectionFactoryMock = $this->getMock(CollectionFactory::class, ['create'], [], '', false);
-        $this->collectionMock = $this->getMock(Collection::class, [], [], '', false);
-        $this->categoryFactoryMock = $this->getMock(CategoryFactory::class, ['create'], [], '', false);
+        $this->fixtureModelMock = $this->createMock(FixtureModel::class);
+        $this->collectionFactoryMock = $this->createPartialMock(CollectionFactory::class, ['create']);
+        $this->collectionMock = $this->createMock(Collection::class);
+        $this->categoryFactoryMock = $this->createPartialMock(CategoryFactory::class, ['create']);
 
         $this->model = (new ObjectManager($this))->getObject(CategoriesFixture::class, [
             'fixtureModel' => $this->fixtureModelMock,
@@ -84,9 +88,7 @@ class CategoriesFixtureTest extends \PHPUnit_Framework_TestCase
         $this->collectionFactoryMock->expects($this->once())->method('create')->willReturn($this->collectionMock);
         $this->collectionMock->expects($this->once())->method('getSize')->willReturn(2);
 
-        $parentCategoryMock = $this->getMock(
-            \Magento\Catalog\Model\Category::class,
-            [
+        $parentCategoryMock = $this->createPartialMock(\Magento\Catalog\Model\Category::class, [
                 'getName',
                 'setId',
                 'getId',
@@ -104,11 +106,7 @@ class CategoriesFixtureTest extends \PHPUnit_Framework_TestCase
                 'save',
                 'setStoreId',
                 'load',
-            ],
-            [],
-            '',
-            false
-        );
+            ]);
         $parentCategoryMock->expects($this->once())->method('getId')->willReturn(5);
         $parentCategoryMock->expects($this->once())->method('getLevel')->willReturn(3);
         $categoryMock = clone $parentCategoryMock;
@@ -151,6 +149,10 @@ class CategoriesFixtureTest extends \PHPUnit_Framework_TestCase
             ->willReturnSelf();
         $categoryMock->expects($this->once())
             ->method('setIsActive')
+            ->willReturnSelf();
+        $categoryMock->expects($this->exactly(2))
+            ->method('setStoreId')
+            ->with(Store::DEFAULT_STORE_ID)
             ->willReturnSelf();
 
         $this->categoryFactoryMock->expects($this->once())->method('create')->willReturn($categoryMock);

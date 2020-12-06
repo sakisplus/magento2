@@ -11,6 +11,7 @@ namespace Magento\Framework\Api;
  *
  * @api
  * @method Filter create()
+ * @since 100.0.2
  */
 class FilterBuilder extends AbstractSimpleObjectBuilder
 {
@@ -29,7 +30,7 @@ class FilterBuilder extends AbstractSimpleObjectBuilder
     /**
      * Set value
      *
-     * @param string $value
+     * @param string|array $value
      * @return $this
      */
     public function setValue($value)

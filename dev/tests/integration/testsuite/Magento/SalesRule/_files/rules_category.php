@@ -15,16 +15,23 @@ $salesRule->setData(
         'simple_action' => 'by_percent',
         'discount_amount' => 50,
         'discount_step' => 0,
-        'stop_rules_processing' => 1,
+        'stop_rules_processing' => 0,
         'website_ids' => [
             \Magento\TestFramework\Helper\Bootstrap::getObjectManager()->get(
                 \Magento\Store\Model\StoreManagerInterface::class
             )->getWebsite()->getId()
+        ],
+        'store_labels' => [
+
+                'store_id' => 0,
+                'store_label' => 'TestRule_Label',
+
         ]
     ]
 );
 
-$salesRule->getConditions()->loadArray([
+$salesRule->getConditions()->loadArray(
+    [
     'type' => \Magento\SalesRule\Model\Rule\Condition\Combine::class,
     'attribute' => null,
     'operator' => null,
@@ -52,9 +59,34 @@ $salesRule->getConditions()->loadArray([
                         ],
                 ],
         ],
-]);
+    ]
+);
 
 $salesRule->save();
+
+$category = \Magento\TestFramework\Helper\Bootstrap::getObjectManager()->create(\Magento\Catalog\Model\Category::class);
+$category->isObjectNew(true);
+$category->setId(
+    66
+)->setCreatedAt(
+    '2014-06-23 09:50:07'
+)->setName(
+    'Category 1'
+)->setParentId(
+    2
+)->setPath(
+    '1/2/66'
+)->setLevel(
+    2
+)->setAvailableSortBy(
+    ['position', 'name']
+)->setDefaultSortBy(
+    'name'
+)->setIsActive(
+    true
+)->setPosition(
+    1
+)->save();
 
 /** @var Magento\Framework\Registry $registry */
 $registry = \Magento\TestFramework\Helper\Bootstrap::getObjectManager()->get(\Magento\Framework\Registry::class);

@@ -3,6 +3,7 @@
  * Copyright © Magento, Inc. All rights reserved.
  * See COPYING.txt for license details.
  */
+
 namespace Magento\Catalog\Model\Product\Option\Type;
 
 use Magento\Framework\App\Filesystem\DirectoryList;
@@ -15,8 +16,9 @@ use Magento\Framework\App\ObjectManager;
 /**
  * Catalog product option file type
  *
- * @author     Magento Core Team <core@magentocommerce.com>
+ * @SuppressWarnings(PHPMD.ExcessiveClassComplexity)
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @SuppressWarnings(PHPMD.CookieAndSessionMisuse)
  */
 class File extends \Magento\Catalog\Model\Product\Option\Type\DefaultType
 {
@@ -33,7 +35,7 @@ class File extends \Magento\Catalog\Model\Product\Option\Type\DefaultType
 
     /**
      * @var \Magento\Framework\Filesystem\Directory\ReadInterface
-     * @deprecated
+     * @deprecated 101.1.0
      * @see $mediaDirectory
      */
     protected $_rootDirectory;
@@ -126,7 +128,7 @@ class File extends \Magento\Catalog\Model\Product\Option\Type\DefaultType
         $this->mediaDirectory = $this->filesystem->getDirectoryWrite(DirectoryList::MEDIA);
         $this->validatorInfo = $validatorInfo;
         $this->validatorFile = $validatorFile;
-        $this->serializer = $serializer ? $serializer : ObjectManager::getInstance()->get(Json::class);
+        $this->serializer = $serializer ?: ObjectManager::getInstance()->get(Json::class);
         parent::__construct($checkoutSession, $scopeConfig, $data);
     }
 
@@ -179,6 +181,8 @@ class File extends \Magento\Catalog\Model\Product\Option\Type\DefaultType
     }
 
     /**
+     * Retrieve current config file into
+     *
      * Returns file info array if we need to get file from already existing file.
      * Or returns null, if we need to get file from uploaded array.
      *
@@ -255,8 +259,12 @@ class File extends \Magento\Catalog\Model\Product\Option\Type\DefaultType
         } catch (ProductException $e) {
             switch ($this->getProcessMode()) {
                 case \Magento\Catalog\Model\Product\Type\AbstractType::PROCESS_MODE_FULL:
-                    throw new LocalizedException(__('Please specify product\'s required option(s).'));
-                    break;
+                    throw new LocalizedException(
+                        __(
+                            "The product's required option(s) weren't entered. "
+                            . "Make sure the options are entered and try again."
+                        )
+                    );
                 default:
                     $this->setUserValue(null);
                     break;
@@ -324,7 +332,11 @@ class File extends \Magento\Catalog\Model\Product\Option\Type\DefaultType
     public function getFormattedOptionValue($optionValue)
     {
         if ($this->_formattedOptionValue === null) {
-            $value = $this->serializer->unserialize($optionValue);
+            try {
+                $value = $this->serializer->unserialize($optionValue);
+            } catch (\InvalidArgumentException $e) {
+                return $optionValue;
+            }
             if ($value === null) {
                 return $optionValue;
             }
@@ -367,7 +379,7 @@ class File extends \Magento\Catalog\Model\Product\Option\Type\DefaultType
                 $sizes
             );
         } catch (\Exception $e) {
-            throw new LocalizedException(__('The file options format is not valid.'));
+            throw new LocalizedException(__('The file options format is invalid. Use a correct format and try again.'));
         }
     }
 
@@ -405,7 +417,7 @@ class File extends \Magento\Catalog\Model\Product\Option\Type\DefaultType
      * @param string $optionValue Prepared for cart option value
      * @return string
      *
-     * @deprecated
+     * @deprecated 102.0.0
      */
     public function getEditableOptionValue($optionValue)
     {
@@ -429,7 +441,7 @@ class File extends \Magento\Catalog\Model\Product\Option\Type\DefaultType
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      *
-     * @deprecated
+     * @deprecated 102.0.0
      */
     public function parseOptionValue($optionValue, $productOptionValues)
     {
@@ -470,13 +482,13 @@ class File extends \Magento\Catalog\Model\Product\Option\Type\DefaultType
         try {
             $value = $this->serializer->unserialize($quoteOption->getValue());
             if (!isset($value['quote_path'])) {
-                throw new \Exception();
+                return $this;
             }
             $quotePath = $value['quote_path'];
             $orderPath = $value['order_path'];
 
             if (!$this->mediaDirectory->isFile($quotePath) || !$this->mediaDirectory->isReadable($quotePath)) {
-                throw new \Exception();
+                return $this;
             }
 
             if ($this->_coreFileStorageDatabase->checkDbUsage()) {
@@ -518,6 +530,8 @@ class File extends \Magento\Catalog\Model\Product\Option\Type\DefaultType
     }
 
     /**
+     * Prepare size text format
+     *
      * @param array $value
      * @return string
      */

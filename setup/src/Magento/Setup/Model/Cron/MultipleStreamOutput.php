@@ -10,6 +10,8 @@ use Symfony\Component\Console\Output\Output;
 
 /**
  * Class to allow output to multiple file streams
+ *
+ * @deprecated Starting from Magento 2.3.6 Web Setup Wizard is deprecated
  */
 class MultipleStreamOutput extends Output
 {
@@ -29,7 +31,7 @@ class MultipleStreamOutput extends Output
     public function __construct(
         array $streams,
         $verbosity = self::VERBOSITY_NORMAL,
-        $decorated = null,
+        $decorated = false,
         OutputFormatterInterface $formatter = null
     ) {
         foreach ($streams as $stream) {

@@ -6,7 +6,11 @@
 namespace Magento\Config\Model\Config\Structure\Element;
 
 /**
+ * Abstract Composite.
+ *
+ * phpcs:disable Magento2.Classes.AbstractApi
  * @api
+ * @since 100.0.2
  */
 abstract class AbstractComposite extends \Magento\Config\Model\Config\Structure\AbstractElement
 {

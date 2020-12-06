@@ -31,7 +31,7 @@ class ReviewTest extends AbstractModifierTest
         parent::setUp();
         $this->urlBuilderMock = $this->getMockBuilder(UrlInterface::class)
             ->getMockForAbstractClass();
-        $this->moduleManagerMock = $this->getMock(ModuleManager::class, [], [], '', false);
+        $this->moduleManagerMock = $this->createMock(ModuleManager::class);
     }
 
     /**
@@ -39,10 +39,13 @@ class ReviewTest extends AbstractModifierTest
      */
     protected function createModel()
     {
-        $model = $this->objectManager->getObject(Review::class, [
+        $model = $this->objectManager->getObject(
+            Review::class,
+            [
             'locator' => $this->locatorMock,
             'urlBuilder' => $this->urlBuilderMock,
-        ]);
+            ]
+        );
 
         $reviewClass = new \ReflectionClass(Review::class);
         $moduleManagerProperty = $reviewClass->getProperty('moduleManager');

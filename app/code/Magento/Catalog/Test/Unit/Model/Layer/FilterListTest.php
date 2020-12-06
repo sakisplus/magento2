@@ -3,14 +3,13 @@
  * Copyright © Magento, Inc. All rights reserved.
  * See COPYING.txt for license details.
  */
-
-// @codingStandardsIgnoreFile
+declare(strict_types=1);
 
 namespace Magento\Catalog\Test\Unit\Model\Layer;
 
 use \Magento\Catalog\Model\Layer\FilterList;
 
-class FilterListTest extends \PHPUnit_Framework_TestCase
+class FilterListTest extends \PHPUnit\Framework\TestCase
 {
     /**
      * @var \PHPUnit_Framework_MockObject_MockObject
@@ -39,13 +38,11 @@ class FilterListTest extends \PHPUnit_Framework_TestCase
 
     protected function setUp()
     {
-        $this->objectManagerMock = $this->getMock(\Magento\Framework\ObjectManagerInterface::class);
-        $this->attributeListMock = $this->getMock(
-            \Magento\Catalog\Model\Layer\Category\FilterableAttributeList::class, [], [], '', false
+        $this->objectManagerMock = $this->createMock(\Magento\Framework\ObjectManagerInterface::class);
+        $this->attributeListMock = $this->createMock(
+            \Magento\Catalog\Model\Layer\Category\FilterableAttributeList::class
         );
-        $this->attributeMock = $this->getMock(
-            \Magento\Catalog\Model\ResourceModel\Eav\Attribute::class, [], [], '', false
-        );
+        $this->attributeMock = $this->createMock(\Magento\Catalog\Model\ResourceModel\Eav\Attribute::class);
         $filters = [
             FilterList::CATEGORY_FILTER => 'CategoryFilterClass',
             FilterList::PRICE_FILTER => 'PriceFilterClass',
@@ -53,7 +50,7 @@ class FilterListTest extends \PHPUnit_Framework_TestCase
             FilterList::ATTRIBUTE_FILTER => 'AttributeFilterClass',
 
         ];
-        $this->layerMock = $this->getMock(\Magento\Catalog\Model\Layer::class, [], [], '', false);
+        $this->layerMock = $this->createMock(\Magento\Catalog\Model\Layer::class);
 
         $this->model = new FilterList($this->objectManagerMock, $this->attributeListMock, $filters);
     }
@@ -76,9 +73,13 @@ class FilterListTest extends \PHPUnit_Framework_TestCase
 
         $this->objectManagerMock->expects($this->at(1))
             ->method('create')
-            ->with($expectedClass, [
-                'data' => ['attribute_model' => $this->attributeMock],
-                'layer' => $this->layerMock])
+            ->with(
+                $expectedClass,
+                [
+                    'data' => ['attribute_model' => $this->attributeMock],
+                    'layer' => $this->layerMock
+                ]
+            )
             ->will($this->returnValue('filter'));
 
         $this->attributeMock->expects($this->once())

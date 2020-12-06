@@ -11,6 +11,7 @@ use Magento\Framework\View\Element\Template;
  * Import frame result block.
  *
  * @api
+ * @since 100.0.2
  */
 class Result extends \Magento\Backend\Block\Template
 {
@@ -101,7 +102,7 @@ class Result extends \Magento\Backend\Block\Template
                 $this->addError($row);
             }
         } else {
-            $this->_messages['error'][] = $message;
+            $this->_messages['error'][] = $this->escapeHtml($message);
         }
         return $this;
     }
@@ -139,7 +140,8 @@ class Result extends \Magento\Backend\Block\Template
                 $this->addSuccess($row);
             }
         } else {
-            $this->_messages['success'][] = $message . ($appendImportButton ? $this->getImportButtonHtml() : '');
+            $escapedMessage = $this->escapeHtml($message);
+            $this->_messages['success'][] = $escapedMessage . ($appendImportButton ? $this->getImportButtonHtml() : '');
         }
         return $this;
     }

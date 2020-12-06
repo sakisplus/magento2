@@ -5,18 +5,17 @@
  */
 ?>
 <?php
-/**
- * @var $block \Magento\Ui\Block\Wrapper
- */
+// phpcs:disable Magento2.Security.LanguageConstruct.DirectOutput
+// phpcs:disable Magento2.PHP.ShortEchoSyntax.ShortEchoTag
+
+/** @var $block \Magento\Ui\Block\Wrapper */
 ?>
 
-<?= /* @escapeNotVerified */ $block->renderApp(
-    [
-        'widget_columns' => [
-            'displayMode' => 'list'
-        ],
-        'image' => [
-            'imageCode' => 'recently_viewed_products_list_content_widget'
-        ]
+<?php /* @noEscape */ echo $block->renderApp([
+    'widget_columns' => [
+        'displayMode' => 'list'
+    ],
+    'image' => [
+        'imageCode' => 'recently_viewed_products_list_content_widget'
     ]
-);
+]);

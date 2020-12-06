@@ -1,18 +1,22 @@
 {
     "name": "magento/language-de_de",
     "description": "German (Germany) language",
-    "version": "100.2.0-dev",
+    "type": "magento2-language",
     "license": [
         "OSL-3.0",
         "AFL-3.0"
     ],
-    "require": {
-        "magento/framework": "100.2.*"
+    "config": {
+        "sort-packages": true
     },
-    "type": "magento2-language",
+    "version": "100.3.4",
+    "require": {
+        "magento/framework": "102.0.*"
+    },
     "autoload": {
         "files": [
             "registration.php"
         ]
     }
 }
+

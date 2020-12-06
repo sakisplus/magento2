@@ -3,6 +3,8 @@
  * Copyright © Magento, Inc. All rights reserved.
  * See COPYING.txt for license details.
  */
+declare(strict_types=1);
+
 namespace Magento\Framework\View;
 
 use Magento\Framework\App\ObjectManager;
@@ -13,7 +15,6 @@ use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Message\ManagerInterface as MessageManagerInterface;
 use Magento\Framework\Serialize\SerializerInterface;
 use Magento\Framework\View\Layout\Element;
-use Magento\Framework\View\Layout\ScheduledStructure;
 use Psr\Log\LoggerInterface as Logger;
 
 /**
@@ -224,6 +225,8 @@ class Layout extends \Magento\Framework\Simplexml\Config implements \Magento\Fra
     }
 
     /**
+     * Set generator pool.
+     *
      * @param Layout\GeneratorPool $generatorPool
      * @return $this
      */
@@ -234,6 +237,8 @@ class Layout extends \Magento\Framework\Simplexml\Config implements \Magento\Fra
     }
 
     /**
+     * Set builder.
+     *
      * @param Layout\BuilderInterface $builder
      * @return $this
      */
@@ -256,7 +261,10 @@ class Layout extends \Magento\Framework\Simplexml\Config implements \Magento\Fra
     }
 
     /**
-     * TODO Will be eliminated in MAGETWO-28359
+     * Public build.
+     *
+     * @todo Will be eliminated in MAGETWO-28359
+     *
      * @return void
      */
     public function publicBuild()
@@ -533,7 +541,7 @@ class Layout extends \Magento\Framework\Simplexml\Config implements \Magento\Fra
             } elseif ($this->isBlock($name)) {
                 $result = $this->_renderBlock($name);
             } else {
-                $result = $this->_renderContainer($name);
+                $result = $this->_renderContainer($name, false);
             }
         } catch (\Exception $e) {
             if ($this->appState->getMode() === AppState::MODE_DEVELOPER) {
@@ -575,14 +583,15 @@ class Layout extends \Magento\Framework\Simplexml\Config implements \Magento\Fra
      * Gets HTML of container element
      *
      * @param string $name
+     * @param bool $useCache
      * @return string
      */
-    protected function _renderContainer($name)
+    protected function _renderContainer($name, $useCache = true)
     {
         $html = '';
         $children = $this->getChildNames($name);
         foreach ($children as $child) {
-            $html .= $this->renderElement($child);
+            $html .= $this->renderElement($child, $useCache);
         }
         if ($html == '' || !$this->structure->getAttribute($name, Element::CONTAINER_OPT_HTML_TAG)) {
             return $html;
@@ -992,6 +1001,8 @@ class Layout extends \Magento\Framework\Simplexml\Config implements \Magento\Fra
     }
 
     /**
+     * Add adjustable renderer.
+     *
      * @param string $namespace
      * @param string $staticType
      * @param string $dynamicType
@@ -1011,6 +1022,8 @@ class Layout extends \Magento\Framework\Simplexml\Config implements \Magento\Fra
     }
 
     /**
+     * Get renderer options.
+     *
      * @param string $namespace
      * @param string $staticType
      * @param string $dynamicType
@@ -1031,6 +1044,8 @@ class Layout extends \Magento\Framework\Simplexml\Config implements \Magento\Fra
     }
 
     /**
+     * Execute renderer.
+     *
      * @param string $namespace
      * @param string $staticType
      * @param string $dynamicType
@@ -1049,6 +1064,7 @@ class Layout extends \Magento\Framework\Simplexml\Config implements \Magento\Fra
                 ->setTemplate($options['template'])
                 ->assign($data);
 
+            // phpcs:ignore Magento2.Security.LanguageConstruct
             echo $this->_renderBlock($block->getNameInLayout());
         }
     }
@@ -1094,8 +1110,17 @@ class Layout extends \Magento\Framework\Simplexml\Config implements \Magento\Fra
     public function isCacheable()
     {
         $this->build();
-        $cacheableXml = !(bool)count($this->getXml()->xpath('//' . Element::TYPE_BLOCK . '[@cacheable="false"]'));
-        return $this->cacheable && $cacheableXml;
+        $elements = $this->getXml()->xpath('//' . Element::TYPE_BLOCK . '[@cacheable="false"]');
+        $cacheable = $this->cacheable;
+        foreach ($elements as $element) {
+            $blockName = $element->getBlockName();
+            if ($blockName !== false && $this->structure->hasElement($blockName)) {
+                $cacheable = false;
+                break;
+            }
+        }
+
+        return $cacheable;
     }
 
     /**

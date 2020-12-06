@@ -8,9 +8,15 @@ namespace Magento\Braintree\Gateway\Validator;
 use Braintree\Result\Error;
 use Braintree\Result\Successful;
 use Magento\Payment\Gateway\Validator\AbstractValidator;
-use Magento\Braintree\Gateway\Helper\SubjectReader;
+use Magento\Braintree\Gateway\SubjectReader;
 use Magento\Payment\Gateway\Validator\ResultInterfaceFactory;
 
+/**
+ * Braintree general response validator
+ *
+ * @deprecated Starting from Magento 2.3.6 Braintree payment method core integration is deprecated
+ * in favor of official payment integration available on the marketplace
+ */
 class GeneralResponseValidator extends AbstractValidator
 {
     /**
@@ -19,15 +25,25 @@ class GeneralResponseValidator extends AbstractValidator
     protected $subjectReader;
 
     /**
+     * @var ErrorCodeProvider
+     */
+    private $errorCodeProvider;
+
+    /**
      * Constructor
      *
      * @param ResultInterfaceFactory $resultFactory
      * @param SubjectReader $subjectReader
+     * @param ErrorCodeProvider $errorCodeProvider
      */
-    public function __construct(ResultInterfaceFactory $resultFactory, SubjectReader $subjectReader)
-    {
+    public function __construct(
+        ResultInterfaceFactory $resultFactory,
+        SubjectReader $subjectReader,
+        ErrorCodeProvider $errorCodeProvider
+    ) {
         parent::__construct($resultFactory);
         $this->subjectReader = $subjectReader;
+        $this->errorCodeProvider = $errorCodeProvider;
     }
 
     /**
@@ -49,8 +65,9 @@ class GeneralResponseValidator extends AbstractValidator
                 $errorMessages = array_merge($errorMessages, $validationResult[1]);
             }
         }
+        $errorCodes = $this->errorCodeProvider->getErrorCodes($response);
 
-        return $this->createResult($isValid, $errorMessages);
+        return $this->createResult($isValid, $errorMessages, $errorCodes);
     }
 
     /**
@@ -62,7 +79,7 @@ class GeneralResponseValidator extends AbstractValidator
             function ($response) {
                 return [
                     property_exists($response, 'success') && $response->success === true,
-                    [__('Braintree error response.')]
+                    [$response->message ?? __('Braintree error response.')]
                 ];
             }
         ];

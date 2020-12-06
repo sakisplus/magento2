@@ -5,18 +5,18 @@
  */
 namespace Magento\Theme\Test\Unit\Block\Html\Header;
 
-class LogoTest extends \PHPUnit_Framework_TestCase
+class LogoTest extends \PHPUnit\Framework\TestCase
 {
     /**
      * cover \Magento\Theme\Block\Html\Header\Logo::getLogoSrc
      */
     public function testGetLogoSrc()
     {
-        $filesystem = $this->getMock(\Magento\Framework\Filesystem::class, [], [], '', false);
-        $mediaDirectory = $this->getMock(\Magento\Framework\Filesystem\Directory\Read::class, [], [], '', false);
-        $scopeConfig = $this->getMock(\Magento\Framework\App\Config\ScopeConfigInterface::class);
+        $filesystem = $this->createMock(\Magento\Framework\Filesystem::class);
+        $mediaDirectory = $this->createMock(\Magento\Framework\Filesystem\Directory\Read::class);
+        $scopeConfig = $this->createMock(\Magento\Framework\App\Config\ScopeConfigInterface::class);
 
-        $urlBuilder = $this->getMock(\Magento\Framework\UrlInterface::class);
+        $urlBuilder = $this->createMock(\Magento\Framework\UrlInterface::class);
 
         $scopeConfig->expects($this->once())->method('getValue')->will($this->returnValue('default/image.gif'));
         $urlBuilder->expects(
@@ -29,14 +29,7 @@ class LogoTest extends \PHPUnit_Framework_TestCase
         $mediaDirectory->expects($this->any())->method('isFile')->will($this->returnValue(true));
 
         $filesystem->expects($this->any())->method('getDirectoryRead')->will($this->returnValue($mediaDirectory));
-        $helper = $this->getMock(
-            \Magento\MediaStorage\Helper\File\Storage\Database::class,
-            ['checkDbUsage'],
-            [],
-            '',
-            false,
-            false
-        );
+        $helper = $this->createPartialMock(\Magento\MediaStorage\Helper\File\Storage\Database::class, ['checkDbUsage']);
         $helper->expects($this->once())->method('checkDbUsage')->will($this->returnValue(false));
 
         $objectManager = new \Magento\Framework\TestFramework\Unit\Helper\ObjectManager($this);
@@ -50,5 +43,39 @@ class LogoTest extends \PHPUnit_Framework_TestCase
         $block = $objectManager->getObject(\Magento\Theme\Block\Html\Header\Logo::class, $arguments);
 
         $this->assertEquals('http://localhost/pub/media/logo/default/image.gif', $block->getLogoSrc());
+    }
+
+    /**
+     * cover \Magento\Theme\Block\Html\Header\Logo::getLogoHeight
+     */
+    public function testGetLogoHeight()
+    {
+        $scopeConfig = $this->createMock(\Magento\Framework\App\Config\ScopeConfigInterface::class);
+        $scopeConfig->expects($this->once())->method('getValue')->willReturn(null);
+
+        $objectManager = new \Magento\Framework\TestFramework\Unit\Helper\ObjectManager($this);
+        $arguments = [
+            'scopeConfig' => $scopeConfig,
+        ];
+        $block = $objectManager->getObject(\Magento\Theme\Block\Html\Header\Logo::class, $arguments);
+
+        $this->assertEquals(null, $block->getLogoHeight());
+    }
+
+    /**
+     * @covers \Magento\Theme\Block\Html\Header\Logo::getLogoWidth
+     */
+    public function testGetLogoWidth()
+    {
+        $scopeConfig = $this->createMock(\Magento\Framework\App\Config\ScopeConfigInterface::class);
+        $scopeConfig->expects($this->once())->method('getValue')->willReturn('170');
+
+        $objectManager = new \Magento\Framework\TestFramework\Unit\Helper\ObjectManager($this);
+        $arguments = [
+            'scopeConfig' => $scopeConfig,
+        ];
+        $block = $objectManager->getObject(\Magento\Theme\Block\Html\Header\Logo::class, $arguments);
+
+        $this->assertEquals('170', $block->getLogoHeight());
     }
 }

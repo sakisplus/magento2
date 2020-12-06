@@ -12,6 +12,7 @@ use Magento\Backend\Block\Widget\Grid\Extended;
  * Sign up for an alert when the product price changes grid
  *
  * @api
+ * @since 100.0.2
  */
 class Stock extends Extended
 {
@@ -47,6 +48,8 @@ class Stock extends Extended
     }
 
     /**
+     * Construct.
+     *
      * @return void
      */
     protected function _construct()
@@ -62,6 +65,8 @@ class Stock extends Extended
     }
 
     /**
+     * @inheritDoc
+     *
      * @return Grid
      */
     protected function _prepareCollection()
@@ -79,6 +84,8 @@ class Stock extends Extended
     }
 
     /**
+     * @inheritDoc
+     *
      * @return $this
      */
     protected function _prepareColumns()
@@ -102,6 +109,8 @@ class Stock extends Extended
     }
 
     /**
+     * Get grid url.
+     *
      * @return string
      */
     public function getGridUrl()

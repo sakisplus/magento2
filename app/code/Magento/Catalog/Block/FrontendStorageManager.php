@@ -15,6 +15,7 @@ use Magento\Framework\View\Element\Template\Context;
  * Provide information to frontend storage manager
  *
  * @api
+ * @since 102.0.0
  */
 class FrontendStorageManager extends \Magento\Framework\View\Element\Template
 {
@@ -46,10 +47,13 @@ class FrontendStorageManager extends \Magento\Framework\View\Element\Template
     }
 
     /**
+     * Retrieve configuration data as JSON
+     *
      * Merge and retrieve configuration of storages like ids_storage or product_storage
      * in json format
      *
      * @return string
+     * @since 102.0.0
      */
     public function getConfigurationJson()
     {

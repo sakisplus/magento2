@@ -6,12 +6,15 @@
 namespace Magento\Braintree\Gateway\Request;
 
 use Magento\Braintree\Gateway\Config\Config;
-use Magento\Braintree\Gateway\Helper\SubjectReader;
+use Magento\Braintree\Gateway\SubjectReader;
 use Magento\Braintree\Observer\DataAssignObserver;
 use Magento\Payment\Gateway\Request\BuilderInterface;
 
 /**
  * Class KountPaymentDataBuilder
+ *
+ * @deprecated Starting from Magento 2.3.6 Braintree payment method core integration is deprecated
+ * in favor of official payment integration available on the marketplace
  */
 class KountPaymentDataBuilder implements BuilderInterface
 {
@@ -48,10 +51,12 @@ class KountPaymentDataBuilder implements BuilderInterface
     public function build(array $buildSubject)
     {
         $result = [];
-        if (!$this->config->hasFraudProtection()) {
+        $paymentDO = $this->subjectReader->readPayment($buildSubject);
+        $order = $paymentDO->getOrder();
+
+        if (!$this->config->hasFraudProtection($order->getStoreId())) {
             return $result;
         }
-        $paymentDO = $this->subjectReader->readPayment($buildSubject);
 
         $payment = $paymentDO->getPayment();
         $data = $payment->getAdditionalInformation();

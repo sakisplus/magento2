@@ -3,6 +3,8 @@
  * Copyright © Magento, Inc. All rights reserved.
  * See COPYING.txt for license details.
  */
+declare(strict_types=1);
+
 namespace Magento\Braintree\Block\Paypal;
 
 use Magento\Braintree\Gateway\Config\PayPal\Config;
@@ -16,6 +18,9 @@ use Magento\Payment\Model\MethodInterface;
 
 /**
  * Class Button
+ *
+ * @deprecated Starting from Magento 2.3.6 Braintree payment method core integration is deprecated
+ * in favor of official payment integration available on the marketplace
  */
 class Button extends Template implements ShortcutInterface
 {
@@ -49,8 +54,6 @@ class Button extends Template implements ShortcutInterface
     private $payment;
 
     /**
-     * Constructor
-     *
      * @param Context $context
      * @param ResolverInterface $localeResolver
      * @param Session $checkoutSession
@@ -98,6 +101,8 @@ class Button extends Template implements ShortcutInterface
     }
 
     /**
+     * Returns container id.
+     *
      * @return string
      */
     public function getContainerId()
@@ -106,6 +111,8 @@ class Button extends Template implements ShortcutInterface
     }
 
     /**
+     * Returns locale.
+     *
      * @return string
      */
     public function getLocale()
@@ -114,6 +121,8 @@ class Button extends Template implements ShortcutInterface
     }
 
     /**
+     * Returns currency.
+     *
      * @return string
      */
     public function getCurrency()
@@ -122,6 +131,8 @@ class Button extends Template implements ShortcutInterface
     }
 
     /**
+     * Returns amount.
+     *
      * @return float
      */
     public function getAmount()
@@ -130,6 +141,8 @@ class Button extends Template implements ShortcutInterface
     }
 
     /**
+     * Returns if is active.
+     *
      * @return bool
      */
     public function isActive()
@@ -139,6 +152,8 @@ class Button extends Template implements ShortcutInterface
     }
 
     /**
+     * Returns merchant name.
+     *
      * @return string
      */
     public function getMerchantName()
@@ -147,6 +162,8 @@ class Button extends Template implements ShortcutInterface
     }
 
     /**
+     * Returns client token.
+     *
      * @return string|null
      */
     public function getClientToken()
@@ -155,10 +172,22 @@ class Button extends Template implements ShortcutInterface
     }
 
     /**
+     * Returns action success.
+     *
      * @return string
      */
     public function getActionSuccess()
     {
         return $this->getUrl(ConfigProvider::CODE . '/paypal/review', ['_secure' => true]);
+    }
+
+    /**
+     * Gets environment value.
+     *
+     * @return string
+     */
+    public function getEnvironment(): string
+    {
+        return $this->configProvider->getConfig()['payment'][ConfigProvider::CODE]['environment'];
     }
 }

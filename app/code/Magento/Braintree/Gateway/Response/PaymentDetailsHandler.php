@@ -5,15 +5,16 @@
  */
 namespace Magento\Braintree\Gateway\Response;
 
-use Braintree\Transaction;
 use Magento\Braintree\Observer\DataAssignObserver;
-use Magento\Payment\Gateway\Helper\ContextHelper;
-use Magento\Braintree\Gateway\Helper\SubjectReader;
+use Magento\Braintree\Gateway\SubjectReader;
 use Magento\Payment\Gateway\Response\HandlerInterface;
 use Magento\Sales\Api\Data\OrderPaymentInterface;
 
 /**
  * Payment Details Handler
+ *
+ * @deprecated Starting from Magento 2.3.6 Braintree payment method core integration is deprecated
+ * in favor of official payment integration available on the marketplace
  */
 class PaymentDetailsHandler implements HandlerInterface
 {

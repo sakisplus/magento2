@@ -3,6 +3,7 @@
  * Copyright © Magento, Inc. All rights reserved.
  * See COPYING.txt for license details.
  */
+
 namespace Magento\Braintree\Controller\Paypal;
 
 use Magento\Checkout\Model\Session;
@@ -15,6 +16,9 @@ use Magento\Braintree\Gateway\Config\PayPal\Config;
 
 /**
  * Abstract class AbstractAction
+ *
+ * @deprecated Starting from Magento 2.3.6 Braintree payment method core integration is deprecated
+ * in favor of official payment integration available on the marketplace
  */
 abstract class AbstractAction extends Action
 {
@@ -73,7 +77,7 @@ abstract class AbstractAction extends Action
     protected function validateQuote($quote)
     {
         if (!$quote || !$quote->getItemsCount()) {
-            throw new \InvalidArgumentException(__('We can\'t initialize checkout.'));
+            throw new \InvalidArgumentException(__('Checkout failed to initialize. Verify and try again.'));
         }
     }
 }

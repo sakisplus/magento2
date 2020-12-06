@@ -45,7 +45,7 @@ class Checksum implements \Magento\Framework\View\Asset\MergeStrategyInterface
     }
 
     /**
-     * @deprecated
+     * @deprecated 101.0.0
      * @return Source
      */
     private function getAssetSource()

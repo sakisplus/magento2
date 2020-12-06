@@ -157,7 +157,9 @@ class ExportDataHandler implements ExportDataHandlerInterface
     private function prepareFileDirectory(WriteInterface $directory, $path)
     {
         $directory->delete($path);
+        // phpcs:ignore Magento2.Functions.DiscouragedFunction
         if (dirname($path) !== '.') {
+            // phpcs:ignore Magento2.Functions.DiscouragedFunction
             $directory->create(dirname($path));
         }
 
@@ -176,6 +178,7 @@ class ExportDataHandler implements ExportDataHandlerInterface
         $this->archive->pack(
             $source,
             $destination,
+            // phpcs:ignore Magento2.Functions.DiscouragedFunction
             is_dir($source) ?: false
         );
 
@@ -195,7 +198,7 @@ class ExportDataHandler implements ExportDataHandlerInterface
     private function validateSource(WriteInterface $directory, $path)
     {
         if (!$directory->isExist($path)) {
-            throw new LocalizedException(__('Source "%1" is not exist', $directory->getAbsolutePath($path)));
+            throw new LocalizedException(__('The "%1" source doesn\'t exist.', $directory->getAbsolutePath($path)));
         }
 
         return $directory->getAbsolutePath($path);

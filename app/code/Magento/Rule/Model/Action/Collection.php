@@ -3,10 +3,14 @@
  * Copyright © Magento, Inc. All rights reserved.
  * See COPYING.txt for license details.
  */
+
 namespace Magento\Rule\Model\Action;
 
 /**
+ * Collections
+ *
  * @api
+ * @since 100.0.2
  */
 class Collection extends AbstractAction
 {
@@ -60,6 +64,8 @@ class Collection extends AbstractAction
     }
 
     /**
+     * Load array
+     *
      * @param array $arr
      * @return $this
      */
@@ -79,6 +85,8 @@ class Collection extends AbstractAction
     }
 
     /**
+     * Add actions
+     *
      * @param ActionInterface $action
      * @return $this
      */
@@ -90,7 +98,7 @@ class Collection extends AbstractAction
 
         $actions[] = $action;
         if (!$action->getId()) {
-            $action->setId($this->getId() . '.' . sizeof($actions));
+            $action->setId($this->getId() . '.' . count($actions));
         }
 
         $this->setActions($actions);
@@ -98,6 +106,8 @@ class Collection extends AbstractAction
     }
 
     /**
+     * As html
+     *
      * @return string
      */
     public function asHtml()
@@ -110,6 +120,8 @@ class Collection extends AbstractAction
     }
 
     /**
+     * Return new child element
+     *
      * @return $this
      */
     public function getNewChildElement()
@@ -128,6 +140,8 @@ class Collection extends AbstractAction
     }
 
     /**
+     * Return as html recursive
+     *
      * @return string
      */
     public function asHtmlRecursive()
@@ -141,6 +155,8 @@ class Collection extends AbstractAction
     }
 
     /**
+     * Add string
+     *
      * @param string $format
      * @return string
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
@@ -152,6 +168,8 @@ class Collection extends AbstractAction
     }
 
     /**
+     * Return string as recursive
+     *
      * @param int $level
      * @return string
      */
@@ -165,6 +183,8 @@ class Collection extends AbstractAction
     }
 
     /**
+     * Process
+     *
      * @return $this
      */
     public function process()

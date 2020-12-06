@@ -270,7 +270,12 @@ class Bundle extends Block
         $count = $firstOption;
         $selectOption = $element->find(sprintf($this->option, $count), Locator::SELECTOR_XPATH);
         while ($selectOption->isVisible()) {
-            $listOptions[] = $this->parseOptionText($selectOption->getText());
+            $option = $this->parseOptionText($selectOption->getText());
+            $selected = $selectOption->getAttribute('selected');
+            if ($selected) {
+                $option['selected'] = $selected;
+            }
+            $listOptions[] = $option;
             ++$count;
             $selectOption = $element->find(sprintf($this->option, $count), Locator::SELECTOR_XPATH);
         }
@@ -306,7 +311,7 @@ class Bundle extends Block
     {
         foreach ($bundleOptions as $option) {
             $selector = sprintf($this->bundleOptionBlock, $option['title']);
-            $useDefault = isset($option['use_default']) && strtolower($option['use_default']) == 'true' ? true : false;
+            $useDefault = isset($option['use_default']) && strtolower($option['use_default']) == 'true';
             if (!$useDefault) {
                 /** @var Option $optionBlock */
                 $optionBlock = $this->blockFactory->create(

@@ -28,7 +28,7 @@ use Magento\Wishlist\Model\ResourceModel\Item\Option\Collection as OptionCollect
  * @SuppressWarnings(PHPMD.TooManyFields)
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
-class CartTest extends \PHPUnit_Framework_TestCase
+class CartTest extends \PHPUnit\Framework\TestCase
 {
     /** @var  SharedCart |\PHPUnit_Framework_MockObject_MockObject */
     protected $model;
@@ -266,7 +266,7 @@ class CartTest extends \PHPUnit_Framework_TestCase
 
         $successMessage = __('You added %1 to your shopping cart.', $productName);
         $this->messageManager->expects($this->any())
-            ->method('addSuccess')
+            ->method('addSuccessMessage')
             ->with($successMessage)
             ->willReturnSelf();
 

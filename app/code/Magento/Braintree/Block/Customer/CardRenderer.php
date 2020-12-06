@@ -12,6 +12,9 @@ use Magento\Vault\Block\AbstractCardRenderer;
 
 /**
  * @api
+ * @since 100.1.0
+ * @deprecated Starting from Magento 2.3.6 Braintree payment method core integration is deprecated
+ * in favor of official payment integration available on the marketplace
  */
 class CardRenderer extends AbstractCardRenderer
 {
@@ -20,6 +23,7 @@ class CardRenderer extends AbstractCardRenderer
      *
      * @param PaymentTokenInterface $token
      * @return boolean
+     * @since 100.1.0
      */
     public function canRender(PaymentTokenInterface $token)
     {
@@ -28,6 +32,7 @@ class CardRenderer extends AbstractCardRenderer
 
     /**
      * @return string
+     * @since 100.1.0
      */
     public function getNumberLast4Digits()
     {
@@ -36,6 +41,7 @@ class CardRenderer extends AbstractCardRenderer
 
     /**
      * @return string
+     * @since 100.1.0
      */
     public function getExpDate()
     {
@@ -44,6 +50,7 @@ class CardRenderer extends AbstractCardRenderer
 
     /**
      * @return string
+     * @since 100.1.0
      */
     public function getIconUrl()
     {
@@ -52,6 +59,7 @@ class CardRenderer extends AbstractCardRenderer
 
     /**
      * @return int
+     * @since 100.1.0
      */
     public function getIconHeight()
     {
@@ -60,6 +68,7 @@ class CardRenderer extends AbstractCardRenderer
 
     /**
      * @return int
+     * @since 100.1.0
      */
     public function getIconWidth()
     {

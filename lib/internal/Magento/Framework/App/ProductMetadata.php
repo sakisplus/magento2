@@ -8,12 +8,13 @@
 namespace Magento\Framework\App;
 
 use Magento\Framework\Composer\ComposerFactory;
-use \Magento\Framework\Composer\ComposerJsonFinder;
-use \Magento\Framework\App\Filesystem\DirectoryList;
-use \Magento\Framework\Composer\ComposerInformation;
+use Magento\Framework\Composer\ComposerJsonFinder;
+use Magento\Framework\App\Filesystem\DirectoryList;
+use Magento\Framework\Composer\ComposerInformation;
 
 /**
  * Class ProductMetadata
+ *
  * @package Magento\Framework\App
  */
 class ProductMetadata implements ProductMetadataInterface
@@ -29,6 +30,11 @@ class ProductMetadata implements ProductMetadataInterface
     const PRODUCT_NAME  = 'Magento';
 
     /**
+     * Magento version cache key
+     */
+    const VERSION_CACHE_KEY = 'mage-version';
+
+    /**
      * Product version
      *
      * @var string
@@ -37,7 +43,7 @@ class ProductMetadata implements ProductMetadataInterface
 
     /**
      * @var \Magento\Framework\Composer\ComposerJsonFinder
-     * @deprecated
+     * @deprecated 100.1.0
      */
     protected $composerJsonFinder;
 
@@ -47,11 +53,21 @@ class ProductMetadata implements ProductMetadataInterface
     private $composerInformation;
 
     /**
-     * @param ComposerJsonFinder $composerJsonFinder
+     * @var CacheInterface
      */
-    public function __construct(ComposerJsonFinder $composerJsonFinder)
-    {
+    private $cache;
+
+    /**
+     * ProductMetadata constructor.
+     * @param ComposerJsonFinder $composerJsonFinder
+     * @param \Magento\Framework\App\CacheInterface $cache
+     */
+    public function __construct(
+        ComposerJsonFinder $composerJsonFinder,
+        CacheInterface $cache = null
+    ) {
         $this->composerJsonFinder = $composerJsonFinder;
+        $this->cache = $cache ?: ObjectManager::getInstance()->get(CacheInterface::class);
     }
 
     /**
@@ -61,6 +77,7 @@ class ProductMetadata implements ProductMetadataInterface
      */
     public function getVersion()
     {
+        $this->version = $this->version ?: $this->cache->load(self::VERSION_CACHE_KEY);
         if (!$this->version) {
             if (!($this->version = $this->getSystemPackageVersion())) {
                 if ($this->getComposerInformation()->isMagentoRoot()) {
@@ -68,6 +85,7 @@ class ProductMetadata implements ProductMetadataInterface
                 } else {
                     $this->version = 'UNKNOWN';
                 }
+                $this->cache->save($this->version, self::VERSION_CACHE_KEY, [Config::CACHE_TAG]);
             }
         }
         return $this->version;
@@ -97,7 +115,7 @@ class ProductMetadata implements ProductMetadataInterface
      * Get version from system package
      *
      * @return string
-     * @deprecated
+     * @deprecated 100.1.0
      */
     private function getSystemPackageVersion()
     {
@@ -114,7 +132,7 @@ class ProductMetadata implements ProductMetadataInterface
      * Load composerInformation
      *
      * @return ComposerInformation
-     * @deprecated
+     * @deprecated 100.1.0
      */
     private function getComposerInformation()
     {

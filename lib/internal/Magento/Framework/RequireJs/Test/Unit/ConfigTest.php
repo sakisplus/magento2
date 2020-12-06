@@ -9,7 +9,7 @@ namespace Magento\Framework\RequireJs\Test\Unit;
 use \Magento\Framework\RequireJs\Config;
 use Magento\Framework\View\Asset\RepositoryMap;
 
-class ConfigTest extends \PHPUnit_Framework_TestCase
+class ConfigTest extends \PHPUnit\Framework\TestCase
 {
     /**
      * @var \Magento\Framework\RequireJs\Config\File\Collector\Aggregated|\PHPUnit_Framework_MockObject_MockObject
@@ -53,21 +53,15 @@ class ConfigTest extends \PHPUnit_Framework_TestCase
 
     protected function setUp()
     {
-        $this->fileSource = $this->getMock(
-            \Magento\Framework\RequireJs\Config\File\Collector\Aggregated::class,
-            [],
-            [],
-            '',
-            false
-        );
+        $this->fileSource = $this->createMock(\Magento\Framework\RequireJs\Config\File\Collector\Aggregated::class);
         $this->design = $this->getMockForAbstractClass(\Magento\Framework\View\DesignInterface::class);
 
-        $readFactory = $this->getMock(\Magento\Framework\Filesystem\File\ReadFactory::class, [], [], '', false);
-        $this->fileReader = $this->getMock(\Magento\Framework\Filesystem\File\Read::class, [], [], '', false);
+        $readFactory = $this->createMock(\Magento\Framework\Filesystem\File\ReadFactory::class);
+        $this->fileReader = $this->createMock(\Magento\Framework\Filesystem\File\Read::class);
         $readFactory->expects($this->any())
             ->method('create')
             ->will($this->returnValue($this->fileReader));
-        $repo = $this->getMock(\Magento\Framework\View\Asset\Repository::class, [], [], '', false);
+        $repo = $this->createMock(\Magento\Framework\View\Asset\Repository::class);
         $this->context = $this->getMockBuilder(\Magento\Framework\View\Asset\ContextInterface::class)
             ->setMethods(
                 [
@@ -107,10 +101,14 @@ class ConfigTest extends \PHPUnit_Framework_TestCase
     {
         $this->fileReader->expects($this->any())
             ->method('readAll')
-            ->will($this->returnCallback(function ($file) {
-                return $file . ' content';
-            }));
-        $fileOne = $this->getMock(\Magento\Framework\View\File::class, [], [], '', false);
+            ->will(
+                $this->returnCallback(
+                    function ($file) {
+                        return $file . ' content';
+                    }
+                )
+            );
+        $fileOne = $this->createMock(\Magento\Framework\View\File::class);
         $fileOne->expects($this->once())
             ->method('getFilename')
             ->will($this->returnValue('some/full/relative/path/file_one.js'));
@@ -120,7 +118,7 @@ class ConfigTest extends \PHPUnit_Framework_TestCase
         $fileOne->expects($this->once())
             ->method('getModule')
             ->will($this->returnValue('Module_One'));
-        $fileTwo = $this->getMock(\Magento\Framework\View\File::class, [], [], '', false);
+        $fileTwo = $this->createMock(\Magento\Framework\View\File::class);
         $fileTwo->expects($this->once())
             ->method('getFilename')
             ->will($this->returnValue('some/full/relative/path/file_two.js'));
@@ -186,11 +184,12 @@ expected;
 
         $expected = <<<code
     var ctx = require.s.contexts._,
-        origNameToUrl = ctx.nameToUrl;
+        origNameToUrl = ctx.nameToUrl,
+        baseUrl = ctx.config.baseUrl;
 
     ctx.nameToUrl = function() {
         var url = origNameToUrl.apply(ctx, arguments);
-        if (!url.match(/\.min\./)) {
+        if (url.indexOf(baseUrl) === 0&&!url.match(/\.min\./)) {
             url = url.replace(/(\.min)?\.js$/, '.min.js');
         }
         return url;

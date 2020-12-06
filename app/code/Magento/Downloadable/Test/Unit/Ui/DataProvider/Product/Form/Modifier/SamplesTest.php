@@ -16,10 +16,10 @@ use Magento\Framework\UrlInterface;
 use Magento\Framework\Stdlib\ArrayManager;
 
 /**
- * Class SamplesTest
+ * Test for class Magento\Downloadable\Ui\DataProvider\Product\Form\Modifier\Samples
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
-class SamplesTest extends \PHPUnit_Framework_TestCase
+class SamplesTest extends \PHPUnit\Framework\TestCase
 {
     /**
      * @var ObjectManagerHelper
@@ -72,13 +72,13 @@ class SamplesTest extends \PHPUnit_Framework_TestCase
     protected function setUp()
     {
         $this->objectManagerHelper = new ObjectManagerHelper($this);
-        $this->locatorMock = $this->getMock(LocatorInterface::class);
-        $this->productMock = $this->getMock(ProductInterface::class);
-        $this->samplesDataMock = $this->getMock(SamplesData::class, [], [], '', false);
-        $this->storeManagerMock = $this->getMock(StoreManagerInterface::class);
-        $this->typeUploadMock = $this->getMock(TypeUpload::class, [], [], '', false);
-        $this->urlBuilderMock = $this->getMock(UrlInterface::class);
-        $this->arrayManagerMock = $this->getMock(ArrayManager::class, [], [], '', false);
+        $this->locatorMock = $this->createMock(LocatorInterface::class);
+        $this->productMock = $this->createMock(ProductInterface::class);
+        $this->samplesDataMock = $this->createMock(SamplesData::class);
+        $this->storeManagerMock = $this->createMock(StoreManagerInterface::class);
+        $this->typeUploadMock = $this->createMock(TypeUpload::class);
+        $this->urlBuilderMock = $this->createMock(UrlInterface::class);
+        $this->arrayManagerMock = $this->createMock(ArrayManager::class);
         $this->samples = $this->objectManagerHelper->getObject(
             Samples::class,
             [
@@ -141,7 +141,7 @@ class SamplesTest extends \PHPUnit_Framework_TestCase
             ->method('isSingleStoreMode');
         $this->typeUploadMock->expects($this->once())
             ->method('toOptionArray');
-        $this->urlBuilderMock->expects($this->once())
+        $this->urlBuilderMock->expects($this->never())
             ->method('addSessionParam')
             ->willReturnSelf();
         $this->urlBuilderMock->expects($this->once())

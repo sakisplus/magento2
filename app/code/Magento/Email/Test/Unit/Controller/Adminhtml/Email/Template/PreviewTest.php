@@ -9,18 +9,15 @@ use Magento\Email\Controller\Adminhtml\Email\Template\Preview;
 use Magento\Framework\App\Action\Context;
 use Magento\Framework\App\RequestInterface;
 use Magento\Framework\App\View;
-use Magento\Framework\Registry;
 use Magento\Framework\TestFramework\Unit\Helper\ObjectManager;
 use Magento\Framework\View\Config;
 use Magento\Framework\View\Page\Title;
 use Magento\Framework\View\Result\Page;
 
 /**
- * Preview Test
- *
- * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * Preview Test.
  */
-class PreviewTest extends \PHPUnit_Framework_TestCase
+class PreviewTest extends \PHPUnit\Framework\TestCase
 {
     /**
      * @var Preview
@@ -31,11 +28,6 @@ class PreviewTest extends \PHPUnit_Framework_TestCase
      * @var Context
      */
     protected $context;
-
-    /**
-     * @var Registry|\PHPUnit_Framework_MockObject_MockObject
-     */
-    protected $coreRegistryMock;
 
     /**
      * @var View|\PHPUnit_Framework_MockObject_MockObject
@@ -98,7 +90,6 @@ class PreviewTest extends \PHPUnit_Framework_TestCase
             \Magento\Email\Controller\Adminhtml\Email\Template\Preview::class,
             [
                 'context' => $this->context,
-                'coreRegistry' => $this->coreRegistryMock,
             ]
         );
     }

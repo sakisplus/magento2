@@ -16,6 +16,8 @@ use Magento\Sales\Api\Data\OrderPaymentInterface;
  *
  * @see https://developers.braintreepayments.com/reference/response/transaction
  * @see http://www.emsecommerce.net/avs_cvv2_response_codes.htm
+ * @deprecated Starting from Magento 2.3.6 Braintree payment method core integration is deprecated
+ * in favor of official payment integration available on the marketplace
  */
 class AvsEmsCodeMapper implements PaymentVerificationInterface
 {
@@ -24,7 +26,7 @@ class AvsEmsCodeMapper implements PaymentVerificationInterface
      *
      * @var string
      */
-    private static $unavailableCode = 'U';
+    private static $unavailableCode = '';
 
     /**
      * List of mapping AVS codes

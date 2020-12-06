@@ -16,6 +16,7 @@ use Magento\Framework\Pricing\PriceInfoInterface;
  * Should be the base for creating any Price type class
  *
  * @api
+ * @since 100.0.2
  */
 abstract class AbstractPrice implements PriceInterface
 {
@@ -30,7 +31,7 @@ abstract class AbstractPrice implements PriceInterface
     protected $amount;
 
     /**
-     * @var \Magento\Framework\Pricing\Adjustment\Calculator
+     * @var \Magento\Framework\Pricing\Adjustment\CalculatorInterface
      */
     protected $calculator;
 

@@ -5,12 +5,16 @@
  */
 namespace Magento\Backend\App;
 
+use Magento\Framework\Encryption\Helper\Security;
+
 /**
  * Generic backend controller
  *
+ * phpcs:disable Magento2.Classes.AbstractApi
  * @api
  * @SuppressWarnings(PHPMD.NumberOfChildren)
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @since 100.0.2
  */
 abstract class AbstractAction extends \Magento\Framework\App\Action\Action
 {
@@ -100,6 +104,8 @@ abstract class AbstractAction extends \Magento\Framework\App\Action\Action
     }
 
     /**
+     * Checking if the user has access to requested component.
+     *
      * @return bool
      */
     protected function _isAllowed()
@@ -118,6 +124,8 @@ abstract class AbstractAction extends \Magento\Framework\App\Action\Action
     }
 
     /**
+     * Get message manager.
+     *
      * @return \Magento\Framework\Message\ManagerInterface
      */
     protected function getMessageManager()
@@ -145,6 +153,8 @@ abstract class AbstractAction extends \Magento\Framework\App\Action\Action
     }
 
     /**
+     * Prepare breadcrumbs.
+     *
      * @param string $label
      * @param string $title
      * @param string|null $link
@@ -157,6 +167,8 @@ abstract class AbstractAction extends \Magento\Framework\App\Action\Action
     }
 
     /**
+     * Add content to specified block.
+     *
      * @param \Magento\Framework\View\Element\AbstractBlock $block
      * @return $this
      */
@@ -166,6 +178,8 @@ abstract class AbstractAction extends \Magento\Framework\App\Action\Action
     }
 
     /**
+     * Move block to left container.
+     *
      * @param \Magento\Framework\View\Element\AbstractBlock $block
      * @return $this
      */
@@ -175,6 +189,8 @@ abstract class AbstractAction extends \Magento\Framework\App\Action\Action
     }
 
     /**
+     * Add js to specified block.
+     *
      * @param \Magento\Framework\View\Element\AbstractBlock $block
      * @return $this
      */
@@ -199,15 +215,13 @@ abstract class AbstractAction extends \Magento\Framework\App\Action\Action
     }
 
     /**
+     * Dispatch request.
+     *
      * @param \Magento\Framework\App\RequestInterface $request
      * @return \Magento\Framework\App\ResponseInterface
      */
     public function dispatch(\Magento\Framework\App\RequestInterface $request)
     {
-        if (!$this->_processUrlKeys()) {
-            return parent::dispatch($request);
-        }
-
         if ($request->isDispatched() && $request->getActionName() !== 'denied' && !$this->_isAllowed()) {
             $this->_response->setStatusHeader(403, '1.1', 'Forbidden');
             if (!$this->_auth->isLoggedIn()) {
@@ -216,6 +230,7 @@ abstract class AbstractAction extends \Magento\Framework\App\Action\Action
             $this->_view->loadLayout(['default', 'adminhtml_denied'], true, true, false);
             $this->_view->renderLayout();
             $this->_request->setDispatched(true);
+
             return $this->_response;
         }
 
@@ -224,6 +239,11 @@ abstract class AbstractAction extends \Magento\Framework\App\Action\Action
         }
 
         $this->_processLocaleSettings();
+
+        // Need to preload isFirstPageAfterLogin (see https://github.com/magento/magento2/issues/15510)
+        if ($this->_auth->isLoggedIn()) {
+            $this->_auth->getAuthStorage()->isFirstPageAfterLogin();
+        }
 
         return parent::dispatch($request);
     }
@@ -245,6 +265,9 @@ abstract class AbstractAction extends \Magento\Framework\App\Action\Action
      * Check url keys. If non valid - redirect
      *
      * @return bool
+     *
+     * @see \Magento\Backend\App\Request\BackendValidator for default
+     * request validation.
      */
     public function _processUrlKeys()
     {
@@ -280,8 +303,7 @@ abstract class AbstractAction extends \Magento\Framework\App\Action\Action
     }
 
     /**
-     * Set session locale,
-     * process force locale set through url params
+     * Set session locale, process force locale set through url params.
      *
      * @return $this
      */
@@ -303,8 +325,8 @@ abstract class AbstractAction extends \Magento\Framework\App\Action\Action
      * Set redirect into response
      *
      * @TODO MAGETWO-28356: Refactor controller actions to new ResultInterface
-     * @param   string $path
-     * @param   array $arguments
+     * @param string $path
+     * @param array $arguments
      * @return \Magento\Framework\App\ResponseInterface
      */
     protected function _redirect($path, $arguments = [])
@@ -327,7 +349,7 @@ abstract class AbstractAction extends \Magento\Framework\App\Action\Action
     protected function _forward($action, $controller = null, $module = null, array $params = null)
     {
         $this->_getSession()->setIsUrlNotice($this->_actionFlag->get('', self::FLAG_IS_URLS_CHECKED));
-        return parent::_forward($action, $controller, $module, $params);
+        parent::_forward($action, $controller, $module, $params);
     }
 
     /**
@@ -354,7 +376,7 @@ abstract class AbstractAction extends \Magento\Framework\App\Action\Action
         }
 
         $secretKey = $this->getRequest()->getParam(\Magento\Backend\Model\UrlInterface::SECRET_KEY_PARAM_NAME, null);
-        if (!$secretKey || $secretKey != $this->_backendUrl->getSecretKey()) {
+        if (!$secretKey || !Security::compareStrings($secretKey, $this->_backendUrl->getSecretKey())) {
             return false;
         }
         return true;

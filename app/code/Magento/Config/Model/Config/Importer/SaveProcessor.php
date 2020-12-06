@@ -5,9 +5,7 @@
  */
 namespace Magento\Config\Model\Config\Importer;
 
-use Magento\Config\Model\Config\Backend\Currency\AbstractCurrency;
 use Magento\Config\Model\PreparedValueFactory;
-use Magento\Directory\Model\Currency;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\App\Config\Value;
 use Magento\Framework\Stdlib\ArrayUtils;
@@ -93,6 +91,7 @@ class SaveProcessor
      * @param string $scope The configuration scope (default, website, or store)
      * @param string $scopeCode The scope code
      * @return void
+     * @throws \Magento\Framework\Exception\RuntimeException
      */
     private function invokeSave(array $scopeData, $scope, $scopeCode = null)
     {
@@ -100,44 +99,14 @@ class SaveProcessor
 
         foreach ($scopeData as $path) {
             $value = $this->scopeConfig->getValue($path, $scope, $scopeCode);
-            $backendModel = $this->valueFactory->create($path, $value, $scope, $scopeCode);
+            if ($value !== null) {
+                $backendModel = $this->valueFactory->create($path, $value, $scope, $scopeCode);
 
-            if ($backendModel instanceof Value) {
-                $this->setAdditionalData($backendModel);
-                $backendModel->beforeSave();
-                $backendModel->afterSave();
+                if ($backendModel instanceof Value) {
+                    $backendModel->beforeSave();
+                    $backendModel->afterSave();
+                }
             }
-        }
-    }
-
-    /**
-     * Adds additional data to backendModel if needed.
-     *
-     * Additional data, such as groups is coming within form request.
-     * There is no possibility to retrieve this data separately, so
-     * this emulation should be performed to preserve backward compatibility.
-     *
-     * @param Value $backendModel Instance of Value
-     * @return void
-     */
-    private function setAdditionalData(Value $backendModel)
-    {
-        // sets allowed currencies before save base or default currency value
-        if ($backendModel instanceof AbstractCurrency) {
-            $allowedCurrencies = $this->scopeConfig->getValue(
-                Currency::XML_PATH_CURRENCY_ALLOW,
-                $backendModel->getScope(),
-                $backendModel->getScopeId()
-            );
-            $backendModel->addData([
-                'groups' => [
-                    'options' => [
-                        'fields' => [
-                            'allow' => ['value' => explode(',', $allowedCurrencies)]
-                        ]
-                    ]
-                ]
-            ]);
         }
     }
 }

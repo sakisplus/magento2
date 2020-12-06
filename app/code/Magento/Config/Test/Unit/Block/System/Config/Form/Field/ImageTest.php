@@ -4,14 +4,12 @@
  * See COPYING.txt for license details.
  */
 
-// @codingStandardsIgnoreFile
-
 /**
- * Tests for \Magento\Framework\Data\Form\Field\Image
+ * Test for \Magento\Framework\Data\Form\Field\Image.
  */
 namespace Magento\Config\Test\Unit\Block\System\Config\Form\Field;
 
-class ImageTest extends \PHPUnit_Framework_TestCase
+class ImageTest extends \PHPUnit\Framework\TestCase
 {
     /**
      * @var \Magento\Framework\Url|\PHPUnit_Framework_MockObject_MockObject
@@ -28,14 +26,24 @@ class ImageTest extends \PHPUnit_Framework_TestCase
      */
     protected $testData;
 
+    /**
+     * @var \Magento\Framework\Escaper|\PHPUnit\Framework\MockObject\MockObject
+     */
+    private $escaperMock;
+
+    /**
+     * @inheritdoc
+     */
     protected function setUp()
     {
         $objectManager = new \Magento\Framework\TestFramework\Unit\Helper\ObjectManager($this);
-        $this->urlBuilderMock = $this->getMock(\Magento\Framework\Url::class, [], [], '', false);
+        $this->urlBuilderMock = $this->createMock(\Magento\Framework\Url::class);
+        $this->escaperMock = $this->createMock(\Magento\Framework\Escaper::class);
         $this->image = $objectManager->getObject(
             \Magento\Config\Block\System\Config\Form\Field\Image::class,
             [
                 'urlBuilder' => $this->urlBuilderMock,
+                '_escaper' => $this->escaperMock,
             ]
         );
 
@@ -54,6 +62,8 @@ class ImageTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
+     * Get element with value and check data.
+     *
      * @covers \Magento\Config\Block\System\Config\Form\Field\Image::_getUrl
      */
     public function testGetElementHtmlWithValue()
@@ -74,7 +84,7 @@ class ImageTest extends \PHPUnit_Framework_TestCase
                 'showInWebsite' => '1',
                 'showInStore' => '1',
                 'label' => null,
-                'backend_model' => \Magento\BackendModelConfig\Backend\Image::class,
+                'backend_model' => \Magento\Config\Model\Config\Backend\Image::class,
                 'upload_dir' => [
                     'config' => 'system/filesystem/media',
                     'scope_info' => '1',
@@ -87,13 +97,24 @@ class ImageTest extends \PHPUnit_Framework_TestCase
                 ],
                 '_elementType' => 'field',
                 'path' => 'catalog/placeholder',
-            ]);
+            ]
+        );
 
         $expectedHtmlId = $this->testData['html_id_prefix']
             . $this->testData['html_id']
             . $this->testData['html_id_suffix'];
 
+        $this->escaperMock->expects($this->once())
+            ->method('escapeUrl')
+            ->with($url . $this->testData['path'] . '/' . $this->testData['value'])
+            ->willReturn($url . $this->testData['path'] . '/' . $this->testData['value']);
+        $this->escaperMock->expects($this->exactly(3))
+            ->method('escapeHtmlAttr')
+            ->with($this->testData['value'])
+            ->willReturn($this->testData['value']);
+        $this->escaperMock->expects($this->atLeastOnce())->method('escapeHtml')->willReturn($expectedHtmlId);
         $html = $this->image->getElementHtml();
+
         $this->assertContains('class="input-file"', $html);
         $this->assertContains('<input', $html);
         $this->assertContains('type="file"', $html);

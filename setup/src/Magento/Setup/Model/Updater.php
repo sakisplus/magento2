@@ -11,6 +11,8 @@ use Magento\Setup\Model\Cron\Queue;
 
 /**
  * Class Updater passes information to the updater application
+ *
+ * @deprecated Starting from Magento 2.3.6 Web Setup Wizard is deprecated
  */
 class Updater
 {
@@ -22,9 +24,7 @@ class Updater
     const TASK_TYPE_MAINTENANCE_MODE = 'maintenance_mode';
     /**#@-*/
 
-    /**
-     * @var Queue
-     */
+    /**#@-*/
     private $queue;
 
     /**

@@ -41,9 +41,7 @@ class Block implements Layout\ReaderInterface
     const ATTRIBUTE_ACL = 'aclResource';
     /**#@-*/
 
-    /**
-     * @var array
-     */
+    /**#@-*/
     protected $attributes = [
         self::ATTRIBUTE_GROUP,
         self::ATTRIBUTE_CLASS,
@@ -83,7 +81,7 @@ class Block implements Layout\ReaderInterface
     private $conditionReader;
 
     /**
-     * @deprecated
+     * @deprecated 101.0.0
      * @var string
      */
     private $deprecatedAttributeAcl = 'acl';
@@ -115,9 +113,7 @@ class Block implements Layout\ReaderInterface
     }
 
     /**
-     * {@inheritdoc}
-     *
-     * @return string[]
+     * @inheritdoc
      */
     public function getSupportedNodes()
     {
@@ -125,12 +121,7 @@ class Block implements Layout\ReaderInterface
     }
 
     /**
-     * {@inheritdoc}
-     *
-     * @param Context $readerContext
-     * @param Element $currentElement
-     * @param Element $parentElement
-     * @return $this
+     * @inheritdoc
      */
     public function interpret(Context $readerContext, Element $currentElement)
     {
@@ -253,7 +244,7 @@ class Block implements Layout\ReaderInterface
      * Update data for scheduled element
      *
      * @param Element $currentElement
-     * @param array &$data
+     * @param array $data
      * @return array
      */
     protected function updateScheduledData($currentElement, array &$data)

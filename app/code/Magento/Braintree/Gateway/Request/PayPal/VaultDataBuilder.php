@@ -5,12 +5,15 @@
  */
 namespace Magento\Braintree\Gateway\Request\PayPal;
 
-use Magento\Braintree\Gateway\Helper\SubjectReader;
+use Magento\Braintree\Gateway\SubjectReader;
 use Magento\Payment\Gateway\Request\BuilderInterface;
 use Magento\Vault\Model\Ui\VaultConfigProvider;
 
 /**
  * Vault Data Builder
+ *
+ * @deprecated Starting from Magento 2.3.6 Braintree payment method core integration is deprecated
+ * in favor of official payment integration available on the marketplace
  */
 class VaultDataBuilder implements BuilderInterface
 {
@@ -49,6 +52,8 @@ class VaultDataBuilder implements BuilderInterface
 
         $payment = $paymentDO->getPayment();
         $data = $payment->getAdditionalInformation();
+        // the payment token could be stored only if a customer checks the Vault flow on storefront
+        // see https://developers.braintreepayments.com/guides/paypal/vault/javascript/v2#invoking-the-vault-flow
         if (!empty($data[VaultConfigProvider::IS_ACTIVE_CODE])) {
             $result[self::$optionsKey] = [
                 self::$storeInVaultOnSuccess => true

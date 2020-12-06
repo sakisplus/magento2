@@ -108,7 +108,7 @@ class Theme implements RuleInterface
      * Get DirectoryList instance
      * @return DirectoryList
      *
-     * @deprecated
+     * @deprecated 101.0.0
      */
     private function getDirectoryList()
     {

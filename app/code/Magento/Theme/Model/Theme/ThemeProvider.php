@@ -93,8 +93,8 @@ class ThemeProvider implements \Magento\Framework\View\Design\Theme\ThemeProvide
         if ($theme->getId()) {
             $this->saveThemeToCache($theme, 'theme' . $fullPath);
             $this->saveThemeToCache($theme, 'theme-by-id-' . $theme->getId());
-            $this->themes[$fullPath] = $theme;
         }
+        $this->themes[$fullPath] = $theme;
 
         return $theme;
     }
@@ -167,7 +167,9 @@ class ThemeProvider implements \Magento\Framework\View\Design\Theme\ThemeProvide
     }
 
     /**
-     * @deprecated
+     * Get theme list
+     *
+     * @deprecated 100.1.3
      * @return ListInterface
      */
     private function getThemeList()
@@ -179,7 +181,9 @@ class ThemeProvider implements \Magento\Framework\View\Design\Theme\ThemeProvide
     }
 
     /**
-     * @deprecated
+     * Get deployment config
+     *
+     * @deprecated 100.1.3
      * @return DeploymentConfig
      */
     private function getDeploymentConfig()

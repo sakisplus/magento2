@@ -15,6 +15,7 @@ use Magento\Framework\Translate\InlineInterface;
  * Actual for controller actions that serve ajax requests
  *
  * @api
+ * @since 100.0.2
  */
 class Json extends AbstractResult
 {
@@ -34,9 +35,8 @@ class Json extends AbstractResult
     private $serializer;
 
     /**
-     * @param InlineInterface $translateInline
-     * @param \Magento\Framework\Serialize\Serializer\Json|null $serializer
-     * @throws \RuntimeException
+     * @param \Magento\Framework\Translate\InlineInterface $translateInline
+     * @param \Magento\Framework\Serialize\Serializer\Json $serializer
      */
     public function __construct(
         InlineInterface $translateInline,
@@ -50,44 +50,18 @@ class Json extends AbstractResult
     /**
      * Set json data
      *
-     * @param array|string|\Magento\Framework\DataObject $data
-     * @param bool $cycleCheck
-     * @param array $options
-     * @return Json
-     * @throws \InvalidArgumentException
-     * @throws \Magento\Framework\Exception\LocalizedException
+     * @param mixed $data
+     * @param boolean $cycleCheck Optional; whether or not to check for object recursion; off by default
+     * @param array $options Additional options used during encoding
+     * @return $this
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-     * @deprecated
-     * @see Json::setArrayData
-     * @see Json::setJsonData
      */
     public function setData($data, $cycleCheck = false, $options = [])
     {
         if ($data instanceof \Magento\Framework\DataObject) {
-            return $this->setArrayData($data->toArray());
+            $data = $data->toArray();
         }
-
-        if (is_array($data)) {
-            return $this->setArrayData($data);
-        }
-
-        if (is_string($data)) {
-            return $this->setJsonData($data);
-        }
-
-        throw new \Magento\Framework\Exception\LocalizedException(
-            new \Magento\Framework\Phrase('Invalid argument type')
-        );
-    }
-
-    /**
-     * @param array $data
-     * @return $this
-     * @throws \InvalidArgumentException
-     */
-    public function setArrayData(array $data)
-    {
-        $this->setJsonData($this->serializer->serialize($data));
+        $this->json = $this->serializer->serialize($data);
         return $this;
     }
 

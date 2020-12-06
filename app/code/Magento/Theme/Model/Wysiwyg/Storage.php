@@ -4,22 +4,30 @@
  * See COPYING.txt for license details.
  */
 
-/**
- * Theme wysiwyg storage model
- */
 namespace Magento\Theme\Model\Wysiwyg;
 
 use Magento\Framework\App\Filesystem\DirectoryList;
+use Magento\Framework\App\ObjectManager;
+use Magento\Framework\Filesystem\DriverInterface;
 
+/**
+ * Theme wysiwyg storage model
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ */
 class Storage
 {
     /**
      * Type font
+     *
+     * Represents the font type.
      */
     const TYPE_FONT = 'font';
 
     /**
      * Type image
+     *
+     * Represents the image type.
      */
     const TYPE_IMAGE = 'image';
 
@@ -74,6 +82,15 @@ class Storage
      * @var \Magento\Framework\Url\DecoderInterface
      */
     protected $urlDecoder;
+    /**
+     * @var \Magento\Framework\Filesystem\Io\File|null
+     */
+    private $file;
+
+    /**
+     * @var DriverInterface
+     */
+    private $filesystemDriver;
 
     /**
      * Initialize dependencies
@@ -84,6 +101,10 @@ class Storage
      * @param \Magento\Framework\Image\AdapterFactory $imageFactory
      * @param \Magento\Framework\Url\EncoderInterface $urlEncoder
      * @param \Magento\Framework\Url\DecoderInterface $urlDecoder
+     * @param \Magento\Framework\Filesystem\Io\File|null $file
+     * @param DriverInterface|null $filesystemDriver
+     *
+     * @throws \Magento\Framework\Exception\FileSystemException
      */
     public function __construct(
         \Magento\Framework\Filesystem $filesystem,
@@ -91,7 +112,9 @@ class Storage
         \Magento\Framework\ObjectManagerInterface $objectManager,
         \Magento\Framework\Image\AdapterFactory $imageFactory,
         \Magento\Framework\Url\EncoderInterface $urlEncoder,
-        \Magento\Framework\Url\DecoderInterface $urlDecoder
+        \Magento\Framework\Url\DecoderInterface $urlDecoder,
+        \Magento\Framework\Filesystem\Io\File $file = null,
+        DriverInterface $filesystemDriver = null
     ) {
         $this->mediaWriteDirectory = $filesystem->getDirectoryWrite(DirectoryList::MEDIA);
         $this->_helper = $helper;
@@ -99,13 +122,17 @@ class Storage
         $this->_imageFactory = $imageFactory;
         $this->urlEncoder = $urlEncoder;
         $this->urlDecoder = $urlDecoder;
+        $this->file = $file ?: ObjectManager::getInstance()->get(
+            \Magento\Framework\Filesystem\Io\File::class
+        );
+        $this->filesystemDriver = $filesystemDriver ?: ObjectManager::getInstance()->get(DriverInterface::class);
     }
 
     /**
      * Upload file
      *
      * @param string $targetPath
-     * @return bool
+     * @return array
      * @throws \Magento\Framework\Exception\LocalizedException
      */
     public function uploadFile($targetPath)
@@ -119,20 +146,13 @@ class Storage
         $uploader->setAllowRenameFiles(true);
         $uploader->setFilesDispersion(false);
         $result = $uploader->save($targetPath);
+        unset($result['path']);
 
         if (!$result) {
             throw new \Magento\Framework\Exception\LocalizedException(__('We can\'t upload the file right now.'));
         }
 
         $this->_createThumbnail($targetPath . '/' . $uploader->getUploadedFileName());
-
-        $result['cookie'] = [
-            'name' => $this->_helper->getSession()->getName(),
-            'value' => $this->_helper->getSession()->getSessionId(),
-            'lifetime' => $this->_helper->getSession()->getCookieLifetime(),
-            'path' => $this->_helper->getSession()->getCookiePath(),
-            'domain' => $this->_helper->getSession()->getCookieDomain()
-        ];
 
         return $result;
     }
@@ -154,7 +174,7 @@ class Storage
             return false;
         }
         $thumbnailDir = $this->_helper->getThumbnailDirectory($source);
-        $thumbnailPath = $thumbnailDir . '/' . pathinfo($source, PATHINFO_BASENAME);
+        $thumbnailPath = sprintf("%s/%s", $thumbnailDir, $this->file->getPathInfo($source)['basename']);
         try {
             $this->mediaWriteDirectory->isExist($thumbnailDir);
             $image = $this->_imageFactory->create();
@@ -224,7 +244,9 @@ class Storage
         $filePath = $this->mediaWriteDirectory->getRelativePath($path . '/' . $file);
         $thumbnailPath = $this->_helper->getThumbnailDirectory($filePath) . '/' . $file;
 
-        if (0 === strpos($filePath, $path) && 0 === strpos($filePath, $this->_helper->getStorageRoot())) {
+        if (0 === strpos($filePath, (string) $path) &&
+            0 === strpos($filePath, (string) $this->_helper->getStorageRoot())
+        ) {
             $this->mediaWriteDirectory->delete($filePath);
             $this->mediaWriteDirectory->delete($thumbnailPath);
         }
@@ -268,12 +290,12 @@ class Storage
             if (!$this->mediaWriteDirectory->isFile($path)) {
                 continue;
             }
-            $fileName = pathinfo($path, PATHINFO_BASENAME);
+            $fileName = $this->file->getPathInfo($path)['basename'];
             $file = ['text' => $fileName, 'id' => $this->urlEncoder->encode($fileName)];
             if (self::TYPE_IMAGE == $storageType) {
                 $requestParams['file'] = $fileName;
                 $file['thumbnailParams'] = $requestParams;
-
+                //phpcs:ignore Generic.PHP.NoSilencedErrors
                 $size = @getimagesize($path);
                 if (is_array($size)) {
                     $file['width'] = $size[0];
@@ -296,7 +318,10 @@ class Storage
         $resultArray = [];
         foreach ($directories as $path) {
             $resultArray[] = [
-                'text' => $this->_helper->getShortFilename(pathinfo($path, PATHINFO_BASENAME), 20),
+                'text' => $this->_helper->getShortFilename(
+                    $this->file->getPathInfo($path)['basename'],
+                    20
+                ),
                 'id' => $this->_helper->convertPathToId($path),
                 'cls' => 'folder'
             ];
@@ -315,8 +340,9 @@ class Storage
     {
         $rootCmp = rtrim($this->_helper->getStorageRoot(), '/');
         $pathCmp = rtrim($path, '/');
+        $absolutePath = $this->filesystemDriver->getRealPathSafety($this->mediaWriteDirectory->getAbsolutePath($path));
 
-        if ($rootCmp == $pathCmp) {
+        if ($rootCmp == $pathCmp || $rootCmp === $absolutePath) {
             throw new \Magento\Framework\Exception\LocalizedException(
                 __('We can\'t delete root directory %1 right now.', $path)
             );

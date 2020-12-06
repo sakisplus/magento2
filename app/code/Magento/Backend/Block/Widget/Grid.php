@@ -10,10 +10,11 @@ namespace Magento\Backend\Block\Widget;
  * Backend grid widget block
  *
  * @api
- * @deprecated in favour of UI component implementation
+ * @deprecated 100.2.0 in favour of UI component implementation
  * @method string getRowClickCallback() getRowClickCallback()
- * @method \Magento\Backend\Block\Widget\Grid setRowClickCallback() setRowClickCallback(string $value)
+ * @method \Magento\Backend\Block\Widget\Grid setRowClickCallback(string $value)
  * @SuppressWarnings(PHPMD.TooManyFields)
+ * @since 100.0.2
  */
 class Grid extends \Magento\Backend\Block\Widget
 {
@@ -149,7 +150,10 @@ class Grid extends \Magento\Backend\Block\Widget
     }
 
     /**
+     * Internal constructor, that is called from real constructor
+     *
      * @return void
+     *
      * @SuppressWarnings(PHPMD.NPathComplexity)
      */
     protected function _construct()
@@ -296,7 +300,10 @@ class Grid extends \Magento\Backend\Block\Widget
         if ($this->getCollection()) {
             $field = $column->getFilterIndex() ? $column->getFilterIndex() : $column->getIndex();
             if ($column->getFilterConditionCallback()) {
-                call_user_func($column->getFilterConditionCallback(), $this->getCollection(), $column);
+                $column->getFilterConditionCallback()[0]->{$column->getFilterConditionCallback()[1]}(
+                    $this->getCollection(),
+                    $column
+                );
             } else {
                 $condition = $column->getFilter()->getCondition();
                 if ($field && isset($condition)) {
@@ -359,7 +366,7 @@ class Grid extends \Magento\Backend\Block\Widget
                 $this->_setFilterValues($data);
             } elseif ($filter && is_array($filter)) {
                 $this->_setFilterValues($filter);
-            } elseif (0 !== sizeof($this->_defaultFilter)) {
+            } elseif (0 !== count($this->_defaultFilter)) {
                 $this->_setFilterValues($this->_defaultFilter);
             }
 
@@ -708,6 +715,7 @@ class Grid extends \Magento\Backend\Block\Widget
 
     /**
      * Grid url getter
+     *
      * Version of getGridUrl() but with parameters
      *
      * @param array $params url parameters

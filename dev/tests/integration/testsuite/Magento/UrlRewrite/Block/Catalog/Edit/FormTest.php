@@ -9,7 +9,7 @@ namespace Magento\UrlRewrite\Block\Catalog\Edit;
  * Test for \Magento\UrlRewrite\Block\Catalog\Edit\Form
  * @magentoAppArea adminhtml
  */
-class FormTest extends \PHPUnit_Framework_TestCase
+class FormTest extends \PHPUnit\Framework\TestCase
 {
     /**
      * @var \Magento\Framework\ObjectManagerInterface
@@ -190,6 +190,7 @@ class FormTest extends \PHPUnit_Framework_TestCase
      *
      * @static
      * @return array
+     * phpcs:disable Magento2.Functions.StaticFunction
      */
     public static function formPostInitDataProvider()
     {
@@ -226,6 +227,7 @@ class FormTest extends \PHPUnit_Framework_TestCase
      *
      * @static
      * @return array
+     * phpcs:disable Magento2.Functions.StaticFunction
      */
     public static function getEntityStoresDataProvider()
     {
@@ -234,35 +236,44 @@ class FormTest extends \PHPUnit_Framework_TestCase
                 null,
                 ['entity_id' => 3, 'store_ids' => [1]],
                 [
-                    ['label' => 'Main Website', 'value' => []],
+                    ['label' => 'Main Website', 'value' => [], '__disableTmpl' => true],
                     [
                         'label' => '    Main Website Store',
-                        'value' => [['label' => '    Default Store View', 'value' => 1]]
-                    ]
+                        'value' => [
+                            ['label' => '    Default Store View', 'value' => 1, '__disableTmpl' => true],
+                        ],
+                        '__disableTmpl' => true,
+                    ],
                 ],
             ],
             [
                 ['entity_id' => 2, 'name' => 'product2', 'url_key' => 'product2', 'store_ids' => [1]],
                 null,
                 [
-                    ['label' => 'Main Website', 'value' => []],
+                    ['label' => 'Main Website', 'value' => [], '__disableTmpl' => true],
                     [
                         'label' => '    Main Website Store',
-                        'value' => [['label' => '    Default Store View', 'value' => 1]]
-                    ]
-                ]
+                        'value' => [
+                            ['label' => '    Default Store View', 'value' => 1, '__disableTmpl' => true],
+                        ],
+                        '__disableTmpl' => true,
+                    ],
+                ],
             ],
             [
                 ['entity_id' => 2, 'name' => 'product2', 'url_key' => 'product2', 'store_ids' => [1]],
                 ['entity_id' => 3, 'name' => 'product3', 'url_key' => 'product3', 'store_ids' => [1]],
                 [
-                    ['label' => 'Main Website', 'value' => []],
+                    ['label' => 'Main Website', 'value' => [], '__disableTmpl' => true],
                     [
                         'label' => '    Main Website Store',
-                        'value' => [['label' => '    Default Store View', 'value' => 1]]
-                    ]
-                ]
-            ]
+                        'value' => [
+                            ['label' => '    Default Store View', 'value' => 1, '__disableTmpl' => true],
+                        ],
+                        '__disableTmpl' => true,
+                    ],
+                ],
+            ],
         ];
     }
 }

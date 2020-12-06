@@ -3,21 +3,16 @@
  * Copyright © Magento, Inc. All rights reserved.
  * See COPYING.txt for license details.
  */
-
-/**
- * Sitemap data helper
- *
- */
 namespace Magento\Sitemap\Helper;
 
-use Magento\Sitemap\Model\ItemResolver\CategoryConfigReader;
-use Magento\Sitemap\Model\ItemResolver\CmsPageConfigReader;
-use Magento\Sitemap\Model\ItemResolver\ProductConfigReader;
+use Magento\Sitemap\Model\ItemProvider\CategoryConfigReader;
+use Magento\Sitemap\Model\ItemProvider\CmsPageConfigReader;
+use Magento\Sitemap\Model\ItemProvider\ProductConfigReader;
 use Magento\Sitemap\Model\SitemapConfigReader;
 use Magento\Store\Model\ScopeInterface;
 
 /**
- * @deprecated
+ * @deprecated 100.3.0
  */
 class Data extends \Magento\Framework\App\Helper\AbstractHelper
 {
@@ -75,7 +70,7 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
      *
      * @param int $storeId
      * @return int
-     * @deprecated
+     * @deprecated 100.3.0
      * @see SitemapConfigReader::getMaximumLinesNumber()
      */
     public function getMaximumLinesNumber($storeId)
@@ -92,7 +87,7 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
      *
      * @param int $storeId
      * @return int
-     * @deprecated
+     * @deprecated 100.3.0
      * @see SitemapConfigReader::getMaximumFileSize()
      */
     public function getMaximumFileSize($storeId)
@@ -109,7 +104,7 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
      *
      * @param int $storeId
      * @return string
-     * @deprecated
+     * @deprecated 100.3.0
      * @see CategoryConfigReader::getChangeFrequency()
      */
     public function getCategoryChangefreq($storeId)
@@ -126,7 +121,7 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
      *
      * @param int $storeId
      * @return string
-     * @deprecated
+     * @deprecated 100.3.0
      * @see ProductConfigReader::getChangeFrequency()
      */
     public function getProductChangefreq($storeId)
@@ -143,7 +138,7 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
      *
      * @param int $storeId
      * @return string
-     * @deprecated
+     * @deprecated 100.3.0
      * @see CmsPageConfigReader::getChangeFrequency()
      */
     public function getPageChangefreq($storeId)
@@ -160,7 +155,7 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
      *
      * @param int $storeId
      * @return string
-     * @deprecated
+     * @deprecated 100.3.0
      * @see CategoryConfigReader::getPriority()
      */
     public function getCategoryPriority($storeId)
@@ -177,7 +172,7 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
      *
      * @param int $storeId
      * @return string
-     * @deprecated
+     * @deprecated 100.3.0
      * @see ProductConfigReader::getPriority()
      */
     public function getProductPriority($storeId)
@@ -194,7 +189,7 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
      *
      * @param int $storeId
      * @return string
-     * @deprecated
+     * @deprecated 100.3.0
      * @see CmsPageConfigReader::getPriority()
      */
     public function getPagePriority($storeId)
@@ -211,7 +206,7 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
      *
      * @param int $storeId
      * @return int
-     * @deprecated
+     * @deprecated 100.3.0
      * @see SitemapConfigReader::getEnableSubmissionRobots()
      */
     public function getEnableSubmissionRobots($storeId)
@@ -228,7 +223,7 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
      *
      * @param int $storeId
      * @return string
-     * @deprecated
+     * @deprecated 100.3.0
      * @see SitemapConfigReader::getProductImageIncludePolicy()
      */
     public function getProductImageIncludePolicy($storeId)
@@ -244,7 +239,7 @@ class Data extends \Magento\Framework\App\Helper\AbstractHelper
      * Get list valid paths for generate a sitemap XML file
      *
      * @return string[]
-     * @deprecated
+     * @deprecated 100.3.0
      * @see SitemapConfigReader::getValidPaths()
      */
     public function getValidPaths()

@@ -11,6 +11,9 @@ use Magento\Customer\Api\Data\GroupInterface;
 use Magento\Customer\Api\GroupRepositoryInterface;
 use Magento\Framework\Api\SearchCriteriaBuilder;
 
+/**
+ * Group.
+ */
 class Group implements GroupSourceInterface
 {
     /**
@@ -56,7 +59,7 @@ class Group implements GroupSourceInterface
         $customerGroups = [];
         $customerGroups[] = [
             'label' => __('ALL GROUPS'),
-            'value' => GroupInterface::CUST_GROUP_ALL,
+            'value' => (string)GroupInterface::CUST_GROUP_ALL,
         ];
 
         /** @var GroupSearchResultsInterface $groups */

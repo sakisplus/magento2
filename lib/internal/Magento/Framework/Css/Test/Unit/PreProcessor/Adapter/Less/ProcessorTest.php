@@ -15,7 +15,7 @@ use Magento\Framework\Css\PreProcessor\Adapter\Less\Processor;
 /**
  * Class ProcessorTest
  */
-class ProcessorTest extends \PHPUnit_Framework_TestCase
+class ProcessorTest extends \PHPUnit\Framework\TestCase
 {
     const TEST_CONTENT = 'test-content';
 
@@ -111,6 +111,9 @@ class ProcessorTest extends \PHPUnit_Framework_TestCase
 
     /**
      * Test for processContent method (empty content)
+     *
+     * @expectedException \Magento\Framework\View\Asset\ContentProcessorException
+     * @expectedExceptionMessageRegExp (Compilation from source: LESS file is empty: test-path)
      */
     public function testProcessContentEmpty()
     {

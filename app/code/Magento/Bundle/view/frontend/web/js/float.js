@@ -5,10 +5,11 @@
 
 /**
  * @api
+ * @deprecated since version 2.2.0
  */
 define([
     'jquery',
-    'jquery/ui'
+    'jquery-ui-modules/widget'
 ], function ($) {
     'use strict';
 

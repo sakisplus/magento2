@@ -15,7 +15,7 @@ use Zend\ServiceManager\ServiceManager;
 use Magento\Setup\Console\CompilerPreparation;
 use PHPUnit_Framework_MockObject_MockObject as Mock;
 
-class CompilerPreparationTest extends \PHPUnit_Framework_TestCase
+class CompilerPreparationTest extends \PHPUnit\Framework\TestCase
 {
     /**
      * @var CompilerPreparation|Mock
@@ -136,7 +136,25 @@ class CompilerPreparationTest extends \PHPUnit_Framework_TestCase
                 'commandName' => 'not:a:compiler',
                 'isCompileCommand' => false,
                 'isHelpOption' => false,
-            ]
+            ],
+            'ST compiler, directory exists, abbreviation 1' => [
+                'commandName' => 's:d:c',
+                'isCompileCommand' => true,
+                'isHelpOption' => false,
+                'dirExists' => true
+            ],
+            'ST compiler, directory exists, abbreviation 2' => [
+                'commandName' => 'se:di:co',
+                'isCompileCommand' => true,
+                'isHelpOption' => false,
+                'dirExists' => true
+            ],
+            'ST compiler, directory exists, abbreviation ambiguous' => [
+                'commandName' => 'se:di',
+                'isCompileCommand' => false,
+                'isHelpOption' => false,
+                'dirExists' => true
+            ],
         ];
     }
 

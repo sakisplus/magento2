@@ -9,6 +9,7 @@ namespace Magento\Framework\View\Layout;
  * Layout structure model
  *
  * @api
+ * @since 100.0.2
  */
 class ScheduledStructure
 {
@@ -21,11 +22,7 @@ class ScheduledStructure
     const ELEMENT_IS_AFTER = 'isAfter';
     /**#@-*/
 
-    /**
-     * Map of class properties.
-     *
-     * @var array
-     */
+    /**#@-*/
     private $serializableProperties = [
         'scheduledStructure',
         'scheduledData',
@@ -150,7 +147,7 @@ class ScheduledStructure
      */
     public function getElementToSort($elementName, array $default = [])
     {
-        return isset($this->elementsToSort[$elementName]) ? $this->elementsToSort[$elementName] : $default;
+        return $this->elementsToSort[$elementName] ?? $default;
     }
 
     /**
@@ -261,7 +258,7 @@ class ScheduledStructure
      */
     public function getElementToMove($elementName, $default = null)
     {
-        return isset($this->scheduledMoves[$elementName]) ? $this->scheduledMoves[$elementName] : $default;
+        return $this->scheduledMoves[$elementName] ?? $default;
     }
 
     /**
@@ -374,7 +371,7 @@ class ScheduledStructure
      */
     public function getStructureElementData($elementName, $default = null)
     {
-        return isset($this->scheduledData[$elementName]) ? $this->scheduledData[$elementName] : $default;
+        return $this->scheduledData[$elementName] ?? $default;
     }
 
     /**
@@ -493,6 +490,7 @@ class ScheduledStructure
      * Reformat 'Layout scheduled structure' to array.
      *
      * @return array
+     * @since 101.0.0
      */
     public function __toArray()
     {
@@ -509,6 +507,7 @@ class ScheduledStructure
      *
      * @param array $data
      * @return void
+     * @since 101.0.0
      */
     public function populateWithArray(array $data)
     {
@@ -526,6 +525,6 @@ class ScheduledStructure
      */
     private function getArrayValueByKey($key, array $array)
     {
-        return isset($array[$key]) ? $array[$key] : [];
+        return $array[$key] ?? [];
     }
 }

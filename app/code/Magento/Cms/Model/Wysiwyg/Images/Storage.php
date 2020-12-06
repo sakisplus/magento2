@@ -3,19 +3,28 @@
  * Copyright © Magento, Inc. All rights reserved.
  * See COPYING.txt for license details.
  */
+
+declare(strict_types=1);
+
 namespace Magento\Cms\Model\Wysiwyg\Images;
 
 use Magento\Cms\Helper\Wysiwyg\Images;
 use Magento\Framework\App\Filesystem\DirectoryList;
+use Magento\Framework\App\ObjectManager;
 
 /**
- * Wysiwyg Images model
+ * Wysiwyg Images model.
+ *
+ * Tightly connected with controllers responsible for managing files so it uses session and is (sort of) a part
+ * of the presentation layer.
  *
  * @SuppressWarnings(PHPMD.LongVariable)
  * @SuppressWarnings(PHPMD.TooManyFields)
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @SuppressWarnings(PHPMD.CookieAndSessionMisuse)
  *
  * @api
+ * @since 100.0.2
  */
 class Storage extends \Magento\Framework\DataObject
 {
@@ -129,6 +138,21 @@ class Storage extends \Magento\Framework\DataObject
     protected $_uploaderFactory;
 
     /**
+     * @var \Psr\Log\LoggerInterface|null
+     */
+    private $logger;
+
+    /**
+     * @var \Magento\Framework\Filesystem\DriverInterface
+     */
+    private $file;
+
+    /**
+     * @var \Magento\Framework\Filesystem\Io\File|null
+     */
+    private $ioFile;
+
+    /**
      * Construct
      *
      * @param \Magento\Backend\Model\Session $session
@@ -147,7 +171,11 @@ class Storage extends \Magento\Framework\DataObject
      * @param array $extensions
      * @param array $dirs
      * @param array $data
+     * @param \Magento\Framework\Filesystem\DriverInterface $file
+     * @param \Magento\Framework\Filesystem\Io\File|null $ioFile
+     * @param \Psr\Log\LoggerInterface|null $logger
      *
+     * @throws \Magento\Framework\Exception\FileSystemException
      * @SuppressWarnings(PHPMD.ExcessiveParameterList)
      */
     public function __construct(
@@ -166,7 +194,10 @@ class Storage extends \Magento\Framework\DataObject
         array $resizeParameters = [],
         array $extensions = [],
         array $dirs = [],
-        array $data = []
+        array $data = [],
+        \Magento\Framework\Filesystem\DriverInterface $file = null,
+        \Magento\Framework\Filesystem\Io\File $ioFile = null,
+        \Psr\Log\LoggerInterface $logger = null
     ) {
         $this->_session = $session;
         $this->_backendUrl = $backendUrl;
@@ -180,9 +211,12 @@ class Storage extends \Magento\Framework\DataObject
         $this->_storageDatabaseFactory = $storageDatabaseFactory;
         $this->_directoryDatabaseFactory = $directoryDatabaseFactory;
         $this->_uploaderFactory = $uploaderFactory;
+        $this->logger = $logger ?: ObjectManager::getInstance()->get(\Psr\Log\LoggerInterface::class);
         $this->_resizeParameters = $resizeParameters;
         $this->_extensions = $extensions;
         $this->_dirs = $dirs;
+        $this->file = $file ?: ObjectManager::getInstance()->get(\Magento\Framework\Filesystem\Driver\File::class);
+        $this->ioFile = $ioFile ?: ObjectManager::getInstance()->get(\Magento\Framework\Filesystem\Io\File::class);
         parent::__construct($data);
     }
 
@@ -191,6 +225,8 @@ class Storage extends \Magento\Framework\DataObject
      *
      * @param string $path
      * @return void
+     * @throws \Magento\Framework\Exception\FileSystemException
+     * @throws \Magento\Framework\Exception\ValidatorException
      */
     protected function createSubDirectories($path)
     {
@@ -240,10 +276,12 @@ class Storage extends \Magento\Framework\DataObject
     protected function removeItemFromCollection($collection, $conditions)
     {
         $regExp = $conditions['reg_exp'] ? '~' . implode('|', array_keys($conditions['reg_exp'])) . '~i' : null;
-        $storageRootLength = strlen($this->_cmsWysiwygImages->getStorageRoot());
+        $storageRoot = $this->_cmsWysiwygImages->getStorageRoot();
+        $storageRootLength = strlen($storageRoot);
 
         foreach ($collection as $key => $value) {
-            $rootChildParts = explode('/', substr($value->getFilename(), $storageRootLength));
+            $mediaSubPathname = substr($value->getFilename(), $storageRootLength);
+            $rootChildParts = explode('/', '/' . ltrim($mediaSubPathname, '/'));
 
             if (array_key_exists($rootChildParts[1], $conditions['plain'])
                 || ($regExp && preg_match($regExp, $value->getFilename()))) {
@@ -259,6 +297,7 @@ class Storage extends \Magento\Framework\DataObject
      *
      * @param string $path Parent directory path
      * @return \Magento\Framework\Data\Collection\Filesystem
+     * @throws \Exception
      */
     public function getDirsCollection($path)
     {
@@ -267,7 +306,8 @@ class Storage extends \Magento\Framework\DataObject
         $collection = $this->getCollection($path)
             ->setCollectDirs(true)
             ->setCollectFiles(false)
-            ->setCollectRecursively(false);
+            ->setCollectRecursively(false)
+            ->setOrder('basename', \Magento\Framework\Data\Collection\Filesystem::SORT_ORDER_ASC);
 
         $conditions = $this->getConditionsForExcludeDirs();
 
@@ -277,9 +317,12 @@ class Storage extends \Magento\Framework\DataObject
     /**
      * Return files
      *
-     * @param string $path Parent directory path
-     * @param string $type Type of storage, e.g. image, media etc.
-     * @return \Magento\Framework\Data\Collection\Filesystem
+     * @param   string $path Parent directory path
+     * @param   string $type Type of storage, e.g. image, media etc.
+     * @return  \Magento\Framework\Data\Collection\Filesystem
+     *
+     * @throws  \Magento\Framework\Exception\FileSystemException
+     * @throws  \Magento\Framework\Exception\LocalizedException
      */
     public function getFilesCollection($path, $type = null)
     {
@@ -317,6 +360,9 @@ class Storage extends \Magento\Framework\DataObject
             $item->setName($item->getBasename());
             $item->setShortName($this->_cmsWysiwygImages->getShortFilename($item->getBasename()));
             $item->setUrl($this->_cmsWysiwygImages->getCurrentUrl() . $item->getBasename());
+            $itemStats = $this->file->stat($item->getFilename());
+            $item->setSize($itemStats['size']);
+            $item->setMimeType(\mime_content_type($item->getFilename()));
 
             if ($this->isImage($item->getBasename())) {
                 $thumbUrl = $this->getThumbnailUrl($item->getFilename(), true);
@@ -325,11 +371,15 @@ class Storage extends \Magento\Framework\DataObject
                     $thumbUrl = $this->_backendUrl->getUrl('cms/*/thumbnail', ['file' => $item->getId()]);
                 }
 
-                $size = @getimagesize($item->getFilename());
+                try {
+                    $size = getimagesize($item->getFilename());
 
-                if (is_array($size)) {
-                    $item->setWidth($size[0]);
-                    $item->setHeight($size[1]);
+                    if (is_array($size)) {
+                        $item->setWidth($size[0]);
+                        $item->setHeight($size[1]);
+                    }
+                } catch (\Error $e) {
+                    $this->logger->notice(sprintf("GetImageSize caused error: %s", $e->getMessage()));
                 }
             } else {
                 $thumbUrl = $this->_assetRepo->getUrl(self::THUMB_PLACEHOLDER_PATH_SUFFIX);
@@ -346,6 +396,7 @@ class Storage extends \Magento\Framework\DataObject
      *
      * @param string $path Path to the directory
      * @return \Magento\Cms\Model\Wysiwyg\Images\Storage\Collection
+     * @throws \Exception
      */
     public function getCollection($path = null)
     {
@@ -408,7 +459,7 @@ class Storage extends \Magento\Framework\DataObject
     /**
      * Recursively delete directory from storage
      *
-     * @param string $path Target dir
+     * @param string $path Absolute path to target directory
      * @return void
      * @throws \Magento\Framework\Exception\LocalizedException
      */
@@ -417,12 +468,19 @@ class Storage extends \Magento\Framework\DataObject
         if ($this->_coreFileStorageDb->checkDbUsage()) {
             $this->_directoryDatabaseFactory->create()->deleteDirectory($path);
         }
+        if (!$this->isPathAllowed($path, $this->getConditionsForExcludeDirs())) {
+            throw new \Magento\Framework\Exception\LocalizedException(
+                __('We cannot delete directory %1.', $this->_getRelativePathToRoot($path))
+            );
+        }
         try {
             $this->_deleteByPath($path);
             $path = $this->getThumbnailRoot() . $this->_getRelativePathToRoot($path);
             $this->_deleteByPath($path);
         } catch (\Magento\Framework\Exception\FileSystemException $e) {
-            throw new \Magento\Framework\Exception\LocalizedException(__('We cannot delete directory %1.', $path));
+            throw new \Magento\Framework\Exception\LocalizedException(
+                __('We cannot delete directory %1.', $this->_getRelativePathToRoot($path))
+            );
         }
     }
 
@@ -431,6 +489,9 @@ class Storage extends \Magento\Framework\DataObject
      *
      * @param string $path
      * @return void
+     * @throws \Magento\Framework\Exception\FileSystemException
+     * @throws \Magento\Framework\Exception\LocalizedException
+     * @throws \Magento\Framework\Exception\ValidatorException
      */
     protected function _deleteByPath($path)
     {
@@ -446,6 +507,8 @@ class Storage extends \Magento\Framework\DataObject
      *
      * @param string $target File path to be deleted
      * @return $this
+     * @throws \Magento\Framework\Exception\FileSystemException
+     * @throws \Magento\Framework\Exception\ValidatorException
      */
     public function deleteFile($target)
     {
@@ -469,13 +532,18 @@ class Storage extends \Magento\Framework\DataObject
     /**
      * Upload and resize new file
      *
-     * @param string $targetPath Target directory
+     * @param string $targetPath Absolute path to target directory
      * @param string $type Type of storage, e.g. image, media etc.
      * @return array File info Array
      * @throws \Magento\Framework\Exception\LocalizedException
      */
     public function uploadFile($targetPath, $type = null)
     {
+        if (!$this->isPathAllowed($targetPath, $this->getConditionsForExcludeDirs())) {
+            throw new \Magento\Framework\Exception\LocalizedException(
+                __('We can\'t upload the file to current folder right now. Please try another folder.')
+            );
+        }
         /** @var \Magento\MediaStorage\Model\File\Uploader $uploader */
         $uploader = $this->_uploaderFactory->create(['fileId' => 'image']);
         $allowed = $this->getAllowedExtensions($type);
@@ -484,6 +552,9 @@ class Storage extends \Magento\Framework\DataObject
         }
         $uploader->setAllowRenameFiles(true);
         $uploader->setFilesDispersion(false);
+        if (!$uploader->checkMimeType($this->getAllowedMimeTypes($type))) {
+            throw new \Magento\Framework\Exception\LocalizedException(__('File validation failed.'));
+        }
         $result = $uploader->save($targetPath);
 
         if (!$result) {
@@ -493,30 +564,28 @@ class Storage extends \Magento\Framework\DataObject
         // create thumbnail
         $this->resizeFile($targetPath . '/' . $uploader->getUploadedFileName(), true);
 
-        $result['cookie'] = [
-            'name' => $this->getSession()->getName(),
-            'value' => $this->getSession()->getSessionId(),
-            'lifetime' => $this->getSession()->getCookieLifetime(),
-            'path' => $this->getSession()->getCookiePath(),
-            'domain' => $this->getSession()->getCookieDomain(),
-        ];
-
         return $result;
     }
 
     /**
      * Thumbnail path getter
      *
-     * @param  string $filePath original file path
-     * @param  bool $checkFile OPTIONAL is it necessary to check file availability
+     * @param string $filePath original file path
+     * @param bool $checkFile OPTIONAL is it necessary to check file availability
      * @return string|false
+     * @throws \Magento\Framework\Exception\FileSystemException
+     * @throws \Magento\Framework\Exception\ValidatorException
      */
     public function getThumbnailPath($filePath, $checkFile = false)
     {
         $mediaRootDir = $this->_cmsWysiwygImages->getStorageRoot();
 
-        if (strpos($filePath, $mediaRootDir) === 0) {
-            $thumbPath = $this->getThumbnailRoot() . substr($filePath, strlen($mediaRootDir));
+        if (strpos($filePath, (string) $mediaRootDir) === 0) {
+            $relativeFilePath = substr($filePath, strlen($mediaRootDir));
+            // phpcs:ignore Magento2.Functions.DiscouragedFunction
+            $thumbPath = $relativeFilePath === basename($filePath)
+                ? $this->getThumbnailRoot() . DIRECTORY_SEPARATOR . $relativeFilePath
+                : $this->getThumbnailRoot() . $relativeFilePath;
 
             if (!$checkFile || $this->_directory->isExist($this->_directory->getRelativePath($thumbPath))) {
                 return $thumbPath;
@@ -529,27 +598,20 @@ class Storage extends \Magento\Framework\DataObject
     /**
      * Thumbnail URL getter
      *
-     * @param  string $filePath original file path
-     * @param  bool $checkFile OPTIONAL is it necessary to check file availability
+     * @param string $filePath original file path
+     * @param bool $checkFile OPTIONAL is it necessary to check file availability
      * @return string|false
+     * @throws \Magento\Framework\Exception\FileSystemException
+     * @throws \Magento\Framework\Exception\ValidatorException
      */
     public function getThumbnailUrl($filePath, $checkFile = false)
     {
-        $mediaRootDir = $this->_cmsWysiwygImages->getStorageRoot();
-
-        if (strpos($filePath, $mediaRootDir) === 0) {
-            $thumbSuffix = self::THUMBS_DIRECTORY_NAME . substr($filePath, strlen($mediaRootDir));
-            if (!$checkFile || $this->_directory->isExist(
-                $this->_directory->getRelativePath($mediaRootDir . '/' . $thumbSuffix)
-            )
-            ) {
-                $thumbSuffix = substr(
-                    $mediaRootDir,
-                    strlen($this->_directory->getAbsolutePath())
-                ) . '/' . $thumbSuffix;
-                $randomIndex = '?rand=' . time();
-                return str_replace('\\', '/', $this->_cmsWysiwygImages->getBaseUrl() . $thumbSuffix) . $randomIndex;
-            }
+        $thumbPath = $this->getThumbnailPath($filePath, $checkFile);
+        if ($thumbPath) {
+            $thumbRelativePath = ltrim($this->_directory->getRelativePath($thumbPath), '/\\');
+            $baseUrl = rtrim($this->_cmsWysiwygImages->getBaseUrl(), '/');
+            $randomIndex = '?rand=' . time();
+            return str_replace('\\', '/', $baseUrl . '/' . $thumbRelativePath) . $randomIndex;
         }
 
         return false;
@@ -559,10 +621,12 @@ class Storage extends \Magento\Framework\DataObject
      * Create thumbnail for image and save it to thumbnails directory
      *
      * @param string $source Image path to be resized
-     * @param bool $keepRation Keep aspect ratio or not
+     * @param bool $keepRatio Keep aspect ratio or not
      * @return bool|string Resized filepath or false if errors were occurred
+     * @throws \Magento\Framework\Exception\FileSystemException
+     * @throws \Magento\Framework\Exception\ValidatorException
      */
-    public function resizeFile($source, $keepRation = true)
+    public function resizeFile($source, $keepRatio = true)
     {
         $realPath = $this->_directory->getRelativePath($source);
         if (!$this->_directory->isFile($realPath) || !$this->_directory->isExist($realPath)) {
@@ -579,9 +643,9 @@ class Storage extends \Magento\Framework\DataObject
         }
         $image = $this->_imageFactory->create();
         $image->open($source);
-        $image->keepAspectRatio($keepRation);
+        $image->keepAspectRatio($keepRatio);
         $image->resize($this->_resizeParameters['width'], $this->_resizeParameters['height']);
-        $dest = $targetDir . '/' . pathinfo($source, PATHINFO_BASENAME);
+        $dest = $targetDir . '/' . $this->ioFile->getPathInfo($source)['basename'];
         $image->save($dest);
         if ($this->_directory->isFile($this->_directory->getRelativePath($dest))) {
             return $dest;
@@ -594,6 +658,9 @@ class Storage extends \Magento\Framework\DataObject
      *
      * @param string $filename File basename
      * @return bool|string Thumbnail path or false for errors
+     * @throws \Magento\Framework\Exception\FileSystemException
+     * @throws \Magento\Framework\Exception\LocalizedException
+     * @throws \Magento\Framework\Exception\ValidatorException
      */
     public function resizeOnTheFly($filename)
     {
@@ -609,14 +676,18 @@ class Storage extends \Magento\Framework\DataObject
      *
      * @param bool|string $filePath Path to the file
      * @return string
+     * @throws \Magento\Framework\Exception\FileSystemException
+     * @throws \Magento\Framework\Exception\ValidatorException
      */
     public function getThumbsPath($filePath = false)
     {
-        $mediaRootDir = $this->_cmsWysiwygImages->getStorageRoot();
         $thumbnailDir = $this->getThumbnailRoot();
 
-        if ($filePath && strpos($filePath, $mediaRootDir) === 0) {
-            $thumbnailDir .= dirname(substr($filePath, strlen($mediaRootDir)));
+        if ($filePath) {
+            $thumbPath = $this->getThumbnailPath($filePath, false);
+            if ($thumbPath) {
+                $thumbnailDir = $this->file->getParentDirectory($thumbPath);
+            }
         }
 
         return $thumbnailDir;
@@ -640,11 +711,7 @@ class Storage extends \Magento\Framework\DataObject
      */
     public function getAllowedExtensions($type = null)
     {
-        if (is_string($type) && array_key_exists("{$type}_allowed", $this->_extensions)) {
-            $allowed = $this->_extensions["{$type}_allowed"];
-        } else {
-            $allowed = $this->_extensions['allowed'];
-        }
+        $allowed = $this->getExtensionsList($type);
 
         return array_keys(array_filter($allowed));
     }
@@ -670,7 +737,11 @@ class Storage extends \Magento\Framework\DataObject
         if (!$this->hasData('_image_extensions')) {
             $this->setData('_image_extensions', $this->getAllowedExtensions('image'));
         }
-        $ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+
+        $ext = "";
+        if (array_key_exists('extension', $this->ioFile->getPathInfo($filename))) {
+            $ext = strtolower($this->ioFile->getPathInfo($filename)['extension']);
+        }
         return in_array($ext, $this->_getData('_image_extensions'));
     }
 
@@ -719,7 +790,7 @@ class Storage extends \Magento\Framework\DataObject
                 __('We can\'t delete root directory %1 right now.', $path)
             );
         }
-        if (strpos($path, $root) !== 0) {
+        if (strpos($path, (string) $root) !== 0) {
             throw new \Magento\Framework\Exception\LocalizedException(
                 __('Directory %1 is not under storage root path.', $path)
             );
@@ -731,10 +802,20 @@ class Storage extends \Magento\Framework\DataObject
      *
      * @param string $path
      * @return string
+     * @throws \Magento\Framework\Exception\ValidatorException
      */
     protected function _sanitizePath($path)
     {
-        return rtrim(preg_replace('~[/\\\]+~', '/', $this->_directory->getDriver()->getRealPath($path)), '/');
+        return rtrim(
+            preg_replace(
+                '~[/\\\]+~',
+                '/',
+                $this->_directory->getDriver()->getRealPathSafety(
+                    $this->_directory->getAbsolutePath($path)
+                )
+            ),
+            '/'
+        );
     }
 
     /**
@@ -742,6 +823,7 @@ class Storage extends \Magento\Framework\DataObject
      *
      * @param string $path
      * @return string|bool
+     * @throws \Magento\Framework\Exception\ValidatorException
      */
     protected function _getRelativePathToRoot($path)
     {
@@ -749,5 +831,60 @@ class Storage extends \Magento\Framework\DataObject
             $this->_sanitizePath($path),
             strlen($this->_sanitizePath($this->_cmsWysiwygImages->getStorageRoot()))
         );
+    }
+
+    /**
+     * Prepare mime types config settings.
+     *
+     * @param string|null $type Type of storage, e.g. image, media etc.
+     * @return array Array of allowed file extensions
+     */
+    private function getAllowedMimeTypes($type = null): array
+    {
+        $allowed = $this->getExtensionsList($type);
+
+        return array_values(array_filter($allowed));
+    }
+
+    /**
+     * Get list of allowed file extensions with mime type in values.
+     *
+     * @param string|null $type
+     * @return array
+     */
+    private function getExtensionsList($type = null): array
+    {
+        if (is_string($type) && array_key_exists("{$type}_allowed", $this->_extensions)) {
+            $allowed = $this->_extensions["{$type}_allowed"];
+        } else {
+            $allowed = $this->_extensions['allowed'];
+        }
+
+        return $allowed;
+    }
+
+    /**
+     * Check if path is not in excluded dirs.
+     *
+     * @param string $path Absolute path
+     * @param array $conditions Exclude conditions
+     * @return bool
+     */
+    private function isPathAllowed($path, array $conditions): bool
+    {
+        $isAllowed = true;
+        $regExp = $conditions['reg_exp'] ? '~' . implode('|', array_keys($conditions['reg_exp'])) . '~i' : null;
+        $storageRoot = $this->_cmsWysiwygImages->getStorageRoot();
+        $storageRootLength = strlen($storageRoot);
+
+        $mediaSubPathname = substr($path, $storageRootLength);
+        $rootChildParts = explode('/', '/' . ltrim($mediaSubPathname, '/'));
+
+        if (array_key_exists($rootChildParts[1], $conditions['plain'])
+            || ($regExp && preg_match($regExp, $path))) {
+            $isAllowed = false;
+        }
+
+        return $isAllowed;
     }
 }

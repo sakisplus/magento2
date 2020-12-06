@@ -4,11 +4,11 @@
  * See COPYING.txt for license details.
  */
 
+namespace Magento\TestFramework\Event;
+
 /**
  * Database transaction events manager
  */
-namespace Magento\TestFramework\Event;
-
 class Transaction
 {
     /**
@@ -39,9 +39,9 @@ class Transaction
     /**
      * Handler for 'startTest' event
      *
-     * @param \PHPUnit_Framework_TestCase $test
+     * @param \PHPUnit\Framework\TestCase $test
      */
-    public function startTest(\PHPUnit_Framework_TestCase $test)
+    public function startTest(\PHPUnit\Framework\TestCase $test)
     {
         $this->_processTransactionRequests('startTest', $test);
     }
@@ -49,9 +49,9 @@ class Transaction
     /**
      * Handler for 'endTest' event
      *
-     * @param \PHPUnit_Framework_TestCase $test
+     * @param \PHPUnit\Framework\TestCase $test
      */
-    public function endTest(\PHPUnit_Framework_TestCase $test)
+    public function endTest(\PHPUnit\Framework\TestCase $test)
     {
         $this->_processTransactionRequests('endTest', $test);
     }
@@ -68,9 +68,9 @@ class Transaction
      * Query whether there are any requests for transaction operations and performs them
      *
      * @param string $eventName
-     * @param \PHPUnit_Framework_TestCase $test
+     * @param \PHPUnit\Framework\TestCase $test
      */
-    protected function _processTransactionRequests($eventName, \PHPUnit_Framework_TestCase $test)
+    protected function _processTransactionRequests($eventName, \PHPUnit\Framework\TestCase $test)
     {
         $param = $this->_getEventParam();
         $this->_eventManager->fireEvent($eventName . 'TransactionRequest', [$test, $param]);
@@ -85,19 +85,36 @@ class Transaction
     /**
      * Start transaction and fire 'startTransaction' event
      *
-     * @param \PHPUnit_Framework_TestCase $test
+     * @param \PHPUnit\Framework\TestCase $test
+     * @SuppressWarnings(PHPMD.UnusedLocalVariable)
      */
-    protected function _startTransaction(\PHPUnit_Framework_TestCase $test)
+    protected function _startTransaction(\PHPUnit\Framework\TestCase $test)
     {
         if (!$this->_isTransactionActive) {
             $this->_getConnection()->beginTransparentTransaction();
             $this->_isTransactionActive = true;
             try {
+                /**
+                 * Add any warning during transaction execution as a failure.
+                 */
+                set_error_handler(
+                    function ($errNo, $errStr, $errFile, $errLine) use ($test) {
+                        if (error_reporting() & $errNo) {
+                            $errMsg = sprintf("%s: %s in %s:%s.", "Warning", $errStr, $errFile, $errLine);
+                            $test->getTestResultObject()->addError($test, new \PHPUnit\Framework\Warning($errMsg), 0);
+                        }
+
+                        // Allow error to be handled by next error handler
+                        return false;
+                    },
+                    E_WARNING
+                );
                 $this->_eventManager->fireEvent('startTransaction', [$test]);
+                restore_error_handler();
             } catch (\Exception $e) {
                 $test->getTestResultObject()->addFailure(
                     $test,
-                    new \PHPUnit_Framework_AssertionFailedError((string)$e),
+                    new \PHPUnit\Framework\AssertionFailedError((string)$e),
                     0
                 );
             }

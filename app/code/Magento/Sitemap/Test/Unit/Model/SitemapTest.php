@@ -5,14 +5,17 @@
  */
 namespace Magento\Sitemap\Test\Unit\Model;
 
+use Magento\Framework\App\Request\Http;
 use Magento\Framework\DataObject;
 use Magento\Framework\Filesystem;
 use Magento\Framework\Filesystem\Directory\Write as DirectoryWrite;
 use Magento\Framework\Filesystem\File\Write;
 use Magento\Framework\TestFramework\Unit\Helper\ObjectManager;
+use Magento\Framework\Translate\InlineInterface;
+use Magento\Framework\ZendEscaper;
 use Magento\Sitemap\Helper\Data;
-use Magento\Sitemap\Model\ItemResolver\ConfigReaderInterface;
-use Magento\Sitemap\Model\ItemResolver\ItemResolverInterface;
+use Magento\Sitemap\Model\ItemProvider\ConfigReaderInterface;
+use Magento\Sitemap\Model\ItemProvider\ItemProviderInterface;
 use Magento\Sitemap\Model\ResourceModel\Catalog\Category;
 use Magento\Sitemap\Model\ResourceModel\Catalog\CategoryFactory;
 use Magento\Sitemap\Model\ResourceModel\Catalog\Product;
@@ -29,7 +32,7 @@ use Magento\Store\Model\StoreManagerInterface;
 /**
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
-class SitemapTest extends \PHPUnit_Framework_TestCase
+class SitemapTest extends \PHPUnit\Framework\TestCase
 {
     /**
      * @var Data
@@ -77,17 +80,25 @@ class SitemapTest extends \PHPUnit_Framework_TestCase
     private $storeManagerMock;
 
     /**
-     * @var ItemResolverInterface|\PHPUnit_Framework_MockObject_MockObject
+     * @var ItemProviderInterface|\PHPUnit_Framework_MockObject_MockObject
      */
-    private $itemResolverMock;
+    private $itemProviderMock;
 
     /**
      * @var ConfigReaderInterface|\PHPUnit_Framework_MockObject_MockObject
      */
     private $configReaderMock;
+    /**
+     * @var Http|\PHPUnit_Framework_MockObject_MockObject
+     */
+    private $request;
+    /**
+     * @var Store|\PHPUnit_Framework_MockObject_MockObject
+     */
+    private $store;
 
     /**
-     * Set helper mocks, create resource model mock
+     * @inheritdoc
      */
     protected function setUp()
     {
@@ -124,13 +135,9 @@ class SitemapTest extends \PHPUnit_Framework_TestCase
             ->method('addCommitCallback')
             ->willReturnSelf();
 
-        $this->fileMock = $this->getMockBuilder(Write::class)
-            ->disableOriginalConstructor()
-            ->getMock();
+        $this->fileMock = $this->createMock(Write::class);
 
-        $this->directoryMock = $this->getMockBuilder(DirectoryWrite::class)
-            ->disableOriginalConstructor()
-            ->getMock();
+        $this->directoryMock = $this->createMock(DirectoryWrite::class);
 
         $this->directoryMock->expects($this->any())
             ->method('openFile')
@@ -146,7 +153,13 @@ class SitemapTest extends \PHPUnit_Framework_TestCase
             ->willReturn($this->directoryMock);
 
         $this->configReaderMock = $this->getMockForAbstractClass(SitemapConfigReaderInterface::class);
-        $this->itemResolverMock = $this->getMockForAbstractClass(ItemResolverInterface::class);
+        $this->itemProviderMock = $this->getMockForAbstractClass(ItemProviderInterface::class);
+        $this->request = $this->createMock(Http::class);
+        $this->store = $this->createPartialMock(Store::class, ['isFrontUrlSecure', 'getBaseUrl']);
+        $this->storeManagerMock = $this->createMock(StoreManagerInterface::class);
+        $this->storeManagerMock->expects($this->any())
+            ->method('getStore')
+            ->willReturn($this->store);
     }
 
     /**
@@ -166,7 +179,7 @@ class SitemapTest extends \PHPUnit_Framework_TestCase
      * Check not exists sitemap path validation
      *
      * @expectedException \Magento\Framework\Exception\LocalizedException
-     * @expectedExceptionMessage Please create the specified folder "" before saving the sitemap.
+     * @expectedExceptionMessage Please create the specified folder "/" before saving the sitemap.
      */
     public function testPathNotExists()
     {
@@ -412,17 +425,18 @@ class SitemapTest extends \PHPUnit_Framework_TestCase
         };
 
         // Check that all expected lines were written
-        $this->fileMock->expects($this->exactly($expectedWrites))
-            ->method('write')
-            ->willReturnCallback($streamWriteCallback);
+        $this->fileMock->expects(
+            $this->exactly($expectedWrites)
+        )->method(
+            'write'
+        )->will(
+            $this->returnCallback($streamWriteCallback)
+        );
 
         $checkFileCallback = function ($file) use (&$currentFile) {
             $currentFile = $file;
-        };
-
-        // Check that all expected file descriptors were created
-        $this->directoryMock->expects($this->exactly(count($expectedFile)))
-            ->method('openFile')
+        };// Check that all expected file descriptors were created
+        $this->directoryMock->expects($this->exactly(count($expectedFile)))->method('openFile')
             ->willReturnCallback($checkFileCallback);
 
         // Check that all file descriptors were closed
@@ -432,10 +446,12 @@ class SitemapTest extends \PHPUnit_Framework_TestCase
         if (count($expectedFile) == 1) {
             $this->directoryMock->expects($this->once())
                 ->method('renameFile')
-                ->willReturnCallback(function ($from, $to) {
-                    \PHPUnit_Framework_Assert::assertEquals('/sitemap-1-1.xml', $from);
-                    \PHPUnit_Framework_Assert::assertEquals('/sitemap.xml', $to);
-                });
+                ->willReturnCallback(
+                    function ($from, $to) {
+                        \PHPUnit\Framework\Assert::assertEquals('/sitemap-1-1.xml', $from);
+                        \PHPUnit\Framework\Assert::assertEquals('/sitemap.xml', $to);
+                    }
+                );
         }
 
         // Check robots txt
@@ -452,7 +468,7 @@ class SitemapTest extends \PHPUnit_Framework_TestCase
             ->willReturn($robotsStart);
 
         $this->directoryMock->expects($this->any())
-            ->method('write')
+            ->method('writeFile')
             ->with(
                 $this->equalTo('robots.txt'),
                 $this->equalTo($robotsFinish)
@@ -477,24 +493,14 @@ class SitemapTest extends \PHPUnit_Framework_TestCase
 
         $model = $this->getModelMock(true);
 
-        $storeMock = $this->getMockBuilder(Store::class)
-            ->setMethods(['isFrontUrlSecure', 'getBaseUrl'])
-            ->disableOriginalConstructor()
-            ->getMock();
-
-        $storeMock->expects($this->atLeastOnce())
+        $this->store->expects($this->atLeastOnce())
             ->method('isFrontUrlSecure')
             ->willReturn(false);
 
-        $storeMock->expects($this->atLeastOnce())
+        $this->store->expects($this->atLeastOnce())
             ->method('getBaseUrl')
             ->with($this->isType('string'), false)
             ->willReturn('http://store.com/');
-
-        $this->storeManagerMock->expects($this->atLeastOnce())
-            ->method('getStore')
-            ->with(1)
-            ->willReturn($storeMock);
 
         return $model;
     }
@@ -525,34 +531,38 @@ class SitemapTest extends \PHPUnit_Framework_TestCase
 
         $storeBaseMediaUrl = 'http://store.com/pub/media/catalog/product/cache/c9e0b0ef589f3508e5ba515cde53c5ff/';
 
-        $this->itemResolverMock->expects($this->any())
+        $this->itemProviderMock->expects($this->any())
             ->method('getItems')
-            ->willReturn([
-                new SitemapItem('category.html', '1.0', 'daily', '2012-12-21 00:00:00'),
-                new SitemapItem('/category/sub-category.html', '1.0', 'daily', '2012-12-21 00:00:00'),
-                new SitemapItem('product.html', '0.5', 'monthly', '2012-12-21 00:00:00'),
-                new SitemapItem(
-                    'product2.html',
-                    '0.5',
-                    'monthly',
-                    '2012-12-21 00:00:00',
-                    new DataObject([
-                        'collection' => [
-                            new DataObject(
-                                [
-                                    'url' => $storeBaseMediaUrl . 'i/m/image1.png',
-                                    'caption' => 'caption & > title < "'
-                                ]
-                            ),
-                            new DataObject(
-                                ['url' => $storeBaseMediaUrl . 'i/m/image_no_caption.png', 'caption' => null]
-                            ),
-                        ],
-                        'thumbnail' => $storeBaseMediaUrl . 't/h/thumbnail.jpg',
-                        'title' => 'Product & > title < "',
-                    ])
-                )
-            ]);
+            ->willReturn(
+                [
+                    new SitemapItem('category.html', '1.0', 'daily', '2012-12-21 00:00:00'),
+                    new SitemapItem('/category/sub-category.html', '1.0', 'daily', '2012-12-21 00:00:00'),
+                    new SitemapItem('product.html', '0.5', 'monthly', '2012-12-21 00:00:00'),
+                    new SitemapItem(
+                        'product2.html',
+                        '0.5',
+                        'monthly',
+                        '2012-12-21 00:00:00',
+                        new DataObject(
+                            [
+                                'collection' => [
+                                    new DataObject(
+                                        [
+                                            'url' => $storeBaseMediaUrl . 'i/m/image1.png',
+                                            'caption' => 'Copyright © caption &trade; & > title < "'
+                                        ]
+                                    ),
+                                    new DataObject(
+                                        ['url' => $storeBaseMediaUrl . 'i/m/image_no_caption.png', 'caption' => null]
+                                    ),
+                                ],
+                                'thumbnail' => $storeBaseMediaUrl . 't/h/thumbnail.jpg',
+                                'title' => 'Product & > title < "',
+                            ]
+                        )
+                    )
+                ]
+            );
 
         /** @var $model Sitemap */
         $model = $this->getMockBuilder(Sitemap::class)
@@ -596,11 +606,10 @@ class SitemapTest extends \PHPUnit_Framework_TestCase
             ->disableOriginalConstructor()
             ->getMock();
 
-        $this->storeManagerMock = $this->getMockBuilder(StoreManagerInterface::class)
-            ->setMethods(['getStore'])
-            ->getMockForAbstractClass();
-
         $objectManager = new ObjectManager($this);
+        $escaper = $objectManager->getObject(\Magento\Framework\Escaper::class);
+        $this->setPrivatePropertyValue($escaper, 'escaper', $objectManager->getObject(ZendEscaper::class));
+        $this->setPrivatePropertyValue($escaper, 'translateInline', $this->createMock(InlineInterface::class));
         $constructArguments = $objectManager->getConstructArguments(
             Sitemap::class,
             [
@@ -610,8 +619,10 @@ class SitemapTest extends \PHPUnit_Framework_TestCase
                 'storeManager' => $this->storeManagerMock,
                 'sitemapData' => $this->helperMockSitemap,
                 'filesystem' => $this->filesystemMock,
-                'itemResolver' => $this->itemResolverMock,
+                'itemProvider' => $this->itemProviderMock,
                 'configReader' => $this->configReaderMock,
+                'escaper' => $escaper,
+                'request' => $this->request,
             ]
         );
         $constructArguments['resource'] = null;
@@ -725,5 +736,80 @@ class SitemapTest extends \PHPUnit_Framework_TestCase
                 'http://store.com/store2/sitemaps/store2/sitemap.xml'
             ]
         ];
+    }
+
+    /**
+     * Check site URL getter
+     *
+     * @param string $storeBaseUrl
+     * @param string $baseDir
+     * @param string $documentRoot
+     * @dataProvider getDocumentRootFromBaseDirUrlDataProvider
+     */
+    public function testGetDocumentRootFromBaseDir(
+        string $storeBaseUrl,
+        string $baseDir,
+        ?string $documentRoot
+    ) {
+        $this->store->setCode('store');
+        $this->store->method('getBaseUrl')->willReturn($storeBaseUrl);
+        $this->directoryMock->method('getAbsolutePath')->willReturn($baseDir);
+        /** @var $model Sitemap */
+        $model = $this->getMockBuilder(Sitemap::class)
+            ->setMethods(['_construct'])
+            ->setConstructorArgs($this->getModelConstructorArgs())
+            ->getMock();
+
+        $method = new \ReflectionMethod($model, 'getDocumentRootFromBaseDir');
+        $method->setAccessible(true);
+        $this->assertSame($documentRoot, $method->invoke($model));
+    }
+
+    /**
+     * Provides test cases for document root testing
+     *
+     * @return array
+     */
+    public function getDocumentRootFromBaseDirUrlDataProvider(): array
+    {
+        return [
+            [
+                'http://magento.com/',
+                '/var/www',
+                '/var/www',
+            ],
+            [
+                'http://magento.com/usa',
+                '/var/www/usa',
+                '/var/www',
+            ],
+            [
+                'http://magento.com/usa/tx',
+                '/var/www/usa/tx',
+                '/var/www',
+            ],
+            'symlink <document root>/usa/txt -> /var/www/html' => [
+                'http://magento.com/usa/tx',
+                '/var/www/html',
+                null,
+            ],
+        ];
+    }
+
+    /**
+     * @param mixed $object
+     * @param string $attributeName
+     * @param string $value
+     */
+    private function setPrivatePropertyValue($object, $attributeName, $value): void
+    {
+        $attribute = new \ReflectionProperty($object, $attributeName);
+        if ($attribute->isPublic()) {
+            $object->$attributeName = $value;
+        } else {
+            $attribute->setAccessible(true);
+            $attribute->setValue($object, $value);
+            $attribute->setAccessible(false);
+        }
     }
 }

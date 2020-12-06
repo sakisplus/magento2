@@ -9,7 +9,12 @@ namespace Magento\GroupedProduct\Pricing\Price;
 use Magento\Catalog\Api\Data\ProductTierPriceInterface;
 use Magento\TestFramework\Helper\Bootstrap;
 
-class FinalPriceTest extends \PHPUnit_Framework_TestCase
+/**
+ * Class FinalPriceTest
+ *
+ * @package Magento\GroupedProduct\Pricing\Price
+ */
+class FinalPriceTest extends \PHPUnit\Framework\TestCase
 {
     /**
      * @magentoDataFixture Magento/GroupedProduct/_files/product_grouped.php
@@ -29,7 +34,7 @@ class FinalPriceTest extends \PHPUnit_Framework_TestCase
      * @magentoDataFixture Magento/GroupedProduct/_files/product_grouped.php
      * @magentoAppIsolation enabled
      */
-    public function testFinalPriceWithTearPrice()
+    public function testFinalPriceWithTierPrice()
     {
         $productRepository = Bootstrap::getObjectManager()
             ->get(\Magento\Catalog\Api\ProductRepositoryInterface::class);
@@ -41,9 +46,11 @@ class FinalPriceTest extends \PHPUnit_Framework_TestCase
 
         /** @var $simpleProduct \Magento\Catalog\Api\Data\ProductInterface */
         $simpleProduct = $productRepository->get('simple');
-        $simpleProduct->setTierPrices([
-            $tierPrice
-        ]);
+        $simpleProduct->setTierPrices(
+            [
+                $tierPrice
+            ]
+        );
         $productRepository->save($simpleProduct);
 
         /** @var $product \Magento\Catalog\Model\Product */

@@ -5,13 +5,13 @@
  */
 
 /**
- * Tests for \Magento\Framework\Data\Form\Element\Image
+ * Tests for \Magento\Framework\Data\Form\Element\Image.
  */
 namespace Magento\Framework\Data\Test\Unit\Form\Element;
 
 use Magento\Framework\UrlInterface;
 
-class ImageTest extends \PHPUnit_Framework_TestCase
+class ImageTest extends \PHPUnit\Framework\TestCase
 {
     /**
      * @var \PHPUnit_Framework_MockObject_MockObject
@@ -28,22 +28,24 @@ class ImageTest extends \PHPUnit_Framework_TestCase
      */
     protected $_image;
 
+    /**
+     * @var \Magento\Framework\Escaper|\PHPUnit\Framework\MockObject\MockObject
+     */
+    private $escaperMock;
+
+    /**
+     * @inheritdoc
+     */
     protected function setUp()
     {
-        $factoryMock = $this->getMock(\Magento\Framework\Data\Form\Element\Factory::class, [], [], '', false);
-        $collectionFactoryMock = $this->getMock(
-            \Magento\Framework\Data\Form\Element\CollectionFactory::class,
-            [],
-            [],
-            '',
-            false
-        );
-        $escaperMock = $this->getMock(\Magento\Framework\Escaper::class, [], [], '', false);
-        $this->urlBuilder = $this->getMock(\Magento\Framework\Url::class, [], [], '', false);
+        $factoryMock = $this->createMock(\Magento\Framework\Data\Form\Element\Factory::class);
+        $collectionFactoryMock = $this->createMock(\Magento\Framework\Data\Form\Element\CollectionFactory::class);
+        $this->escaperMock = $this->createMock(\Magento\Framework\Escaper::class);
+        $this->urlBuilder = $this->createMock(\Magento\Framework\Url::class);
         $this->_image = new \Magento\Framework\Data\Form\Element\Image(
             $factoryMock,
             $collectionFactoryMock,
-            $escaperMock,
+            $this->escaperMock,
             $this->urlBuilder
         );
         $formMock = new \Magento\Framework\DataObject();
@@ -53,6 +55,8 @@ class ImageTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
+     * Check that getType return correct value.
+     *
      * @covers \Magento\Framework\Data\Form\Element\Image::__construct
      */
     public function testConstruct()
@@ -61,20 +65,26 @@ class ImageTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
+     * Get name and check data.
+     *
      * @covers \Magento\Framework\Data\Form\Element\Image::getName
      */
     public function testGetName()
     {
         $this->_image->setName('image_name');
+
         $this->assertEquals('image_name', $this->_image->getName());
     }
 
     /**
+     * Get element without value and check data.
+     *
      * @covers \Magento\Framework\Data\Form\Element\Image::getElementHtml
      */
     public function testGetElementHtmlWithoutValue()
     {
         $html = $this->_image->getElementHtml();
+
         $this->assertContains('class="input-file"', $html);
         $this->assertContains('<input', $html);
         $this->assertContains('type="file"', $html);
@@ -83,16 +93,26 @@ class ImageTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
+     * Get element with value and check data.
+     *
      * @covers \Magento\Framework\Data\Form\Element\Image::getElementHtml
      */
     public function testGetElementHtmlWithValue()
     {
-        $this->_image->setValue('test_value');
+        $data = 'test_value';
+        $baseUrl = 'http://localhost/media/';
+        $this->_image->setValue($data);
         $this->urlBuilder->expects($this->once())
             ->method('getBaseUrl')
             ->with(['_type' => UrlInterface::URL_TYPE_MEDIA])
-            ->willReturn('http://localhost/media/');
+            ->willReturn($baseUrl);
+        $this->escaperMock->expects($this->once())
+            ->method('escapeUrl')
+            ->with($baseUrl . $data)
+            ->willReturn($baseUrl . $data);
+        $this->escaperMock->expects($this->exactly(3))->method('escapeHtmlAttr')->with($data)->willReturn($data);
         $html = $this->_image->getElementHtml();
+
         $this->assertContains('class="input-file"', $html);
         $this->assertContains('<input', $html);
         $this->assertContains('type="file"', $html);

@@ -9,6 +9,7 @@ namespace Magento\Framework\Stdlib;
  * Class ArrayUtils
  *
  * @api
+ * @since 100.0.2
  */
 class ArrayUtils
 {
@@ -150,6 +151,7 @@ class ArrayUtils
      * @param string $path The leading path
      * @param string $separator The path parts separator
      * @return array
+     * @since 101.0.0
      */
     public function flatten(array $data, $path = '', $separator = '/')
     {
@@ -180,6 +182,7 @@ class ArrayUtils
      * @param array $originalArray The array to compare from
      * @param array $newArray The array to compare with
      * @return array Diff array
+     * @since 101.0.0
      */
     public function recursiveDiff(array $originalArray, array $newArray)
     {

@@ -9,6 +9,7 @@ namespace Magento\Catalog\Api;
 /**
  * Special prices resource model.
  * @api
+ * @since 102.0.0
  */
 interface SpecialPriceInterface
 {
@@ -28,6 +29,10 @@ interface SpecialPriceInterface
      *      'price_from' => (string) Special price from date value in UTC.
      *      'price_to' => (string) Special price to date value in UTC.
      * ]
+     * @since 101.1.0
+     * @since 102.0.0
+     * @since 102.0.0
+     * @since 102.0.0
      */
     public function get(array $skus);
 
@@ -45,6 +50,7 @@ interface SpecialPriceInterface
      *      ];
      * @return bool
      * @throws \Magento\Framework\Exception\CouldNotSaveException Thrown if error occurred during price save.
+     * @since 102.0.0
      */
     public function update(array $prices);
 
@@ -62,6 +68,7 @@ interface SpecialPriceInterface
      *      ];
      * @return bool
      * @throws \Magento\Framework\Exception\CouldNotDeleteException Thrown if error occurred during price delete.
+     * @since 102.0.0
      */
     public function delete(array $prices);
 }

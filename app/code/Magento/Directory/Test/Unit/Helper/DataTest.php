@@ -6,11 +6,15 @@
 namespace Magento\Directory\Test\Unit\Helper;
 
 use Magento\Directory\Helper\Data;
+use Magento\Directory\Model\AllowedCountries;
+use Magento\Framework\App\Config\ScopeConfigInterface;
+use Magento\Framework\App\RequestInterface;
+use Magento\Store\Model\ScopeInterface;
 
 /**
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
-class DataTest extends \PHPUnit_Framework_TestCase
+class DataTest extends \PHPUnit\Framework\TestCase
 {
     /**
      * @var \Magento\Directory\Model\ResourceModel\Country\Collection|\PHPUnit_Framework_MockObject_MockObject
@@ -45,35 +49,23 @@ class DataTest extends \PHPUnit_Framework_TestCase
     protected function setUp()
     {
         $objectManager = new \Magento\Framework\TestFramework\Unit\Helper\ObjectManager($this);
-        $this->scopeConfigMock = $this->getMock(\Magento\Framework\App\Config\ScopeConfigInterface::class);
-        $context = $this->getMock(\Magento\Framework\App\Helper\Context::class, [], [], '', false);
+        $this->scopeConfigMock = $this->createMock(\Magento\Framework\App\Config\ScopeConfigInterface::class);
+        $this->scopeConfigMock->expects($this->any())->method('isSetFlag')->willReturn(false);
+        $requestMock = $this->createMock(RequestInterface::class);
+        $context = $this->createMock(\Magento\Framework\App\Helper\Context::class);
+        $context->method('getRequest')
+            ->willReturn($requestMock);
         $context->expects($this->any())
             ->method('getScopeConfig')
             ->willReturn($this->scopeConfigMock);
+        $configCacheType = $this->createMock(\Magento\Framework\App\Cache\Type\Config::class);
 
-        $configCacheType = $this->getMock(\Magento\Framework\App\Cache\Type\Config::class, [], [], '', false);
+        $this->_countryCollection = $this->createMock(\Magento\Directory\Model\ResourceModel\Country\Collection::class);
 
-        $this->_countryCollection = $this->getMock(
-            \Magento\Directory\Model\ResourceModel\Country\Collection::class,
-            [],
-            [],
-            '',
-            false
-        );
-
-        $this->_regionCollection = $this->getMock(
-            \Magento\Directory\Model\ResourceModel\Region\Collection::class,
-            [],
-            [],
-            '',
-            false
-        );
-        $regCollectionFactory = $this->getMock(
+        $this->_regionCollection = $this->createMock(\Magento\Directory\Model\ResourceModel\Region\Collection::class);
+        $regCollectionFactory = $this->createPartialMock(
             \Magento\Directory\Model\ResourceModel\Region\CollectionFactory::class,
-            ['create'],
-            [],
-            '',
-            false
+            ['create']
         );
         $regCollectionFactory->expects(
             $this->any()
@@ -83,13 +75,13 @@ class DataTest extends \PHPUnit_Framework_TestCase
             $this->returnValue($this->_regionCollection)
         );
 
-        $this->jsonHelperMock = $this->getMock(\Magento\Framework\Json\Helper\Data::class, [], [], '', false);
+        $this->jsonHelperMock = $this->createMock(\Magento\Framework\Json\Helper\Data::class);
 
-        $this->_store = $this->getMock(\Magento\Store\Model\Store::class, [], [], '', false);
-        $storeManager = $this->getMock(\Magento\Store\Model\StoreManagerInterface::class, [], [], '', false);
+        $this->_store = $this->createMock(\Magento\Store\Model\Store::class);
+        $storeManager = $this->createMock(\Magento\Store\Model\StoreManagerInterface::class);
         $storeManager->expects($this->any())->method('getStore')->will($this->returnValue($this->_store));
 
-        $currencyFactory = $this->getMock(\Magento\Directory\Model\CurrencyFactory::class, [], [], '', false);
+        $currencyFactory = $this->createMock(\Magento\Directory\Model\CurrencyFactory::class);
 
         $arguments = [
             'context' => $context,
@@ -105,19 +97,18 @@ class DataTest extends \PHPUnit_Framework_TestCase
 
     public function testGetRegionJson()
     {
-        $countries = [
-            new \Magento\Framework\DataObject(['country_id' => 'Country1']),
-            new \Magento\Framework\DataObject(['country_id' => 'Country2'])
-        ];
-        $countryIterator = new \ArrayIterator($countries);
-        $this->_countryCollection->expects(
-            $this->atLeastOnce()
-        )->method(
-            'getIterator'
-        )->will(
-            $this->returnValue($countryIterator)
-        );
-
+        $this->scopeConfigMock->method('getValue')
+            ->willReturnMap(
+                [
+                    [
+                        AllowedCountries::ALLOWED_COUNTRIES_PATH,
+                        ScopeConfigInterface::SCOPE_TYPE_DEFAULT,
+                        null,
+                        'Country1,Country2'
+                    ],
+                    [Data::XML_PATH_STATES_REQUIRED, ScopeInterface::SCOPE_STORE, null, '']
+                ]
+            );
         $regions = [
             new \Magento\Framework\DataObject(
                 ['country_id' => 'Country1', 'region_id' => 'r1', 'code' => 'r1-code', 'name' => 'r1-name']
@@ -162,7 +153,7 @@ class DataTest extends \PHPUnit_Framework_TestCase
         )->method(
             'jsonEncode'
         )->with(
-            new \PHPUnit_Framework_Constraint_IsIdentical($expectedDataToEncode)
+            new \PHPUnit\Framework\Constraint\IsIdentical($expectedDataToEncode)
         )->will(
             $this->returnValue('encoded_json')
         );
@@ -251,7 +242,7 @@ class DataTest extends \PHPUnit_Framework_TestCase
             $this->returnValue(0)
         );
 
-        $store = $this->getMock(\Magento\Store\Model\Store::class, [], [], '', false);
+        $store = $this->createMock(\Magento\Store\Model\Store::class);
         $this->_countryCollection->expects(
             $this->once()
         )->method(

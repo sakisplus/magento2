@@ -12,6 +12,8 @@ use Magento\Setup\Model\Grid;
 
 /**
  * Controller for update extensions grid tasks
+ *
+ * @deprecated Starting from Magento 2.3.6 Web Setup Wizard is deprecated
  */
 class UpdateExtensionGrid extends AbstractActionController
 {
@@ -48,7 +50,7 @@ class UpdateExtensionGrid extends AbstractActionController
     public function extensionsAction()
     {
         $extensions = $this->gridExtension->getListForUpdate();
-        
+
         return new JsonModel(
             [
                 'success' => true,

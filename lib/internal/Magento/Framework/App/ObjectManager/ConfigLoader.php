@@ -86,7 +86,7 @@ class ConfigLoader implements ConfigLoaderInterface
      * Get serializer
      *
      * @return SerializerInterface
-     * @deprecated
+     * @deprecated 101.0.0
      */
     private function getSerializer()
     {

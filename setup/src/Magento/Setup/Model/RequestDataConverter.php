@@ -12,6 +12,8 @@ use Magento\Setup\Console\Command\InstallCommand;
 
 /**
  * Converter of request data into format compatible with models.
+ *
+ * @deprecated Starting from Magento 2.3.6 Web Setup Wizard is deprecated
  */
 class RequestDataConverter
 {
@@ -51,6 +53,14 @@ class RequestDataConverter
             isset($source['db']['tablePrefix']) ? $source['db']['tablePrefix'] : '';
         $result[BackendConfigOptionsList::INPUT_KEY_BACKEND_FRONTNAME] = isset($source['config']['address']['admin'])
             ? $source['config']['address']['admin'] : '';
+        $result[SetupConfigOptionsList::INPUT_KEY_DB_SSL_KEY] = isset($source['db']['driverOptionsSslKey'])
+            ? $source['db']['driverOptionsSslKey'] : '';
+        $result[SetupConfigOptionsList::INPUT_KEY_DB_SSL_CERT] = isset($source['db']['driverOptionsSslCert'])
+            ? $source['db']['driverOptionsSslCert'] : '';
+        $result[SetupConfigOptionsList::INPUT_KEY_DB_SSL_CA] = isset($source['db']['driverOptionsSslCa'])
+            ? $source['db']['driverOptionsSslCa'] : '';
+        $result[SetupConfigOptionsList::INPUT_KEY_DB_SSL_VERIFY] = isset($source['db']['driverOptionsSslVerify'])
+            ? $source['db']['driverOptionsSslVerify'] : '';
         $result[SetupConfigOptionsList::INPUT_KEY_ENCRYPTION_KEY] = isset($source['config']['encrypt']['key'])
             ? $source['config']['encrypt']['key'] : null;
         $result[SetupConfigOptionsList::INPUT_KEY_SESSION_SAVE] = isset($source['config']['sessionSave']['type'])

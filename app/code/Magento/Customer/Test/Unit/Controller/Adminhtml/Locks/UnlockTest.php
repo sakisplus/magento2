@@ -7,15 +7,13 @@ namespace Magento\Customer\Test\Unit\Controller\Adminhtml\Locks;
 
 use Magento\Customer\Model\AuthenticationInterface;
 use Magento\Framework\TestFramework\Unit\Helper\ObjectManager;
-use Magento\Framework\DataObject;
-use Magento\Framework\Phrase;
 
 /**
  * Test class for \Magento\Customer\Controller\Adminhtml\Locks\Unlock testing
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
-class UnlockTest extends \PHPUnit_Framework_TestCase
+class UnlockTest extends \PHPUnit\Framework\TestCase
 {
     /**
      * @var \Magento\Backend\App\Action\Context
@@ -81,28 +79,13 @@ class UnlockTest extends \PHPUnit_Framework_TestCase
         $this->requestMock = $this->getMockBuilder(\Magento\Framework\App\RequestInterface::class)
             ->setMethods(['getParam'])
             ->getMockForAbstractClass();
-        $this->messageManagerMock = $this->getMock(\Magento\Framework\Message\ManagerInterface::class);
-        $this->resultFactoryMock = $this->getMock(
+        $this->messageManagerMock = $this->createMock(\Magento\Framework\Message\ManagerInterface::class);
+        $this->resultFactoryMock = $this->createPartialMock(
             \Magento\Framework\Controller\ResultFactory::class,
-            ['create'],
-            [],
-            '',
-            false
+            ['create']
         );
-        $this->redirectMock = $this->getMock(
-            \Magento\Backend\Model\View\Result\Redirect::class,
-            ['setPath'],
-            [],
-            '',
-            false
-        );
-        $this->customerDataMock = $this->getMock(
-            \Magento\Customer\Model\Data\Customer::class,
-            [],
-            [],
-            '',
-            false
-        );
+        $this->redirectMock = $this->createPartialMock(\Magento\Backend\Model\View\Result\Redirect::class, ['setPath']);
+        $this->customerDataMock = $this->createMock(\Magento\Customer\Model\Data\Customer::class);
         $this->contextMock = $this->getMockBuilder(\Magento\Backend\App\Action\Context::class)
             ->setMethods(['getObjectManager', 'getResultFactory', 'getMessageManager', 'getRequest'])
             ->disableOriginalConstructor()
@@ -135,7 +118,7 @@ class UnlockTest extends \PHPUnit_Framework_TestCase
             ->with($this->equalTo('customer_id'))
             ->will($this->returnValue($customerId));
         $this->authenticationMock->expects($this->once())->method('unlock')->with($customerId);
-        $this->messageManagerMock->expects($this->once())->method('addSuccess');
+        $this->messageManagerMock->expects($this->once())->method('addSuccessMessage');
         $this->redirectMock->expects($this->once())
             ->method('setPath')
             ->with($this->equalTo('customer/index/edit'))
@@ -158,7 +141,7 @@ class UnlockTest extends \PHPUnit_Framework_TestCase
             ->method('unlock')
             ->with($customerId)
             ->willThrowException(new \Exception($phrase));
-        $this->messageManagerMock->expects($this->once())->method('addError');
+        $this->messageManagerMock->expects($this->once())->method('addErrorMessage');
         $this->controller->execute();
     }
 }

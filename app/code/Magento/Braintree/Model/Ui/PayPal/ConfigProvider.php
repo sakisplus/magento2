@@ -11,6 +11,9 @@ use Magento\Framework\Locale\ResolverInterface;
 
 /**
  * Class ConfigProvider
+ *
+ * @deprecated Starting from Magento 2.3.6 Braintree payment method core integration is deprecated
+ * in favor of official payment integration available on the marketplace
  */
 class ConfigProvider implements ConfigProviderInterface
 {
@@ -47,6 +50,8 @@ class ConfigProvider implements ConfigProviderInterface
      */
     public function getConfig()
     {
+        $requireBillingAddressAll = \Magento\Paypal\Model\Config::REQUIRE_BILLING_ADDRESS_ALL;
+
         return [
             'payment' => [
                 self::PAYPAL_CODE => [
@@ -60,6 +65,8 @@ class ConfigProvider implements ConfigProviderInterface
                     'vaultCode' => self::PAYPAL_VAULT_CODE,
                     'skipOrderReview' => $this->config->isSkipOrderReview(),
                     'paymentIcon' => $this->config->getPayPalIcon(),
+                    'isRequiredBillingAddress' =>
+                        (int)$this->config->isRequiredBillingAddress() === $requireBillingAddressAll
                 ]
             ]
         ];

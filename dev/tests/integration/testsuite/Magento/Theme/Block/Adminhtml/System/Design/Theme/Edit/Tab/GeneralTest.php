@@ -8,7 +8,7 @@ namespace Magento\Theme\Block\Adminhtml\System\Design\Theme\Edit\Tab;
 /**
  * @magentoAppArea adminhtml
  */
-class GeneralTest extends \PHPUnit_Framework_TestCase
+class GeneralTest extends \PHPUnit\Framework\TestCase
 {
     /** @var \Magento\Framework\View\LayoutInterface */
     protected $_layout;
@@ -16,7 +16,7 @@ class GeneralTest extends \PHPUnit_Framework_TestCase
     /** @var \Magento\Framework\View\Design\ThemeInterface */
     protected $_theme;
 
-    /** @var \Magento\Theme\Block\Adminhtml\System\Design\Theme\Edit\Tab_General */
+    /** @var \Magento\Theme\Block\Adminhtml\System\Design\Theme\Edit\Tab\General */
     protected $_block;
 
     protected function setUp()

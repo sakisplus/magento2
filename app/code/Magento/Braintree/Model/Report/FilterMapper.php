@@ -10,6 +10,9 @@ use Magento\Braintree\Model\Report\ConditionAppliers\AppliersPool;
 
 /**
  * Class FilterMapper
+ *
+ * @deprecated Starting from Magento 2.3.6 Braintree payment method core integration is deprecated
+ * in favor of official payment integration available on the marketplace
  */
 class FilterMapper
 {
@@ -18,12 +21,18 @@ class FilterMapper
      */
     private $searchFieldsToFiltersMap = [];
 
-    /** @var AppliersPool */
+    /**
+     * @var \Magento\Braintree\Model\Report\ConditionAppliers\AppliersPool
+     */
     private $appliersPool;
 
-    /** @var BraintreeSearchAdapter */
+    /**
+     * @var \Magento\Braintree\Model\Adapter\BraintreeSearchAdapter
+     */
     private $braintreeSearchAdapter;
 
+    /**
+     */
     public function __construct(
         AppliersPool $appliersPool,
         BraintreeSearchAdapter $braintreeSearchAdapter

@@ -5,14 +5,15 @@
  */
 namespace Magento\Analytics\Cron;
 
+use Magento\Analytics\Model\AnalyticsToken;
+use Magento\Analytics\Model\Config\Backend\Baseurl\SubscriptionUpdateHandler;
 use Magento\Analytics\Model\Connector;
-use Magento\Analytics\Model\Plugin\BaseUrlConfigPlugin;
+use Magento\Framework\Exception\NotFoundException;
 use Magento\Framework\FlagManager;
 use Magento\Framework\App\Config\ReinitableConfigInterface;
 use Magento\Framework\App\Config\Storage\WriterInterface;
 
 /**
- * Class Update
  * Executes by cron schedule in case base url was changed
  */
 class Update
@@ -28,8 +29,6 @@ class Update
     private $configWriter;
 
     /**
-     * Reinitable Config Model.
-     *
      * @var ReinitableConfigInterface
      */
     private $reinitableConfig;
@@ -40,38 +39,66 @@ class Update
     private $flagManager;
 
     /**
-     * Update constructor.
+     * @var AnalyticsToken
+     */
+    private $analyticsToken;
+
+    /**
      * @param Connector $connector
      * @param WriterInterface $configWriter
      * @param ReinitableConfigInterface $reinitableConfig
      * @param FlagManager $flagManager
+     * @param AnalyticsToken $analyticsToken
      */
     public function __construct(
         Connector $connector,
         WriterInterface $configWriter,
         ReinitableConfigInterface $reinitableConfig,
-        FlagManager $flagManager
+        FlagManager $flagManager,
+        AnalyticsToken $analyticsToken
     ) {
         $this->connector = $connector;
         $this->configWriter = $configWriter;
         $this->reinitableConfig = $reinitableConfig;
         $this->flagManager = $flagManager;
+        $this->analyticsToken = $analyticsToken;
     }
 
     /**
      * Execute scheduled update operation
      *
      * @return bool
+     * @throws NotFoundException
      */
     public function execute()
     {
-        $updateResult = $this->connector->execute('update');
-        if ($updateResult === false) {
-            return false;
+        $result = false;
+        $attemptsCount = (int)$this->flagManager
+            ->getFlagData(SubscriptionUpdateHandler::SUBSCRIPTION_UPDATE_REVERSE_COUNTER_FLAG_CODE);
+
+        if (($attemptsCount > 0) && $this->analyticsToken->isTokenExist()) {
+            $attemptsCount--;
+            $this->flagManager
+                ->saveFlag(SubscriptionUpdateHandler::SUBSCRIPTION_UPDATE_REVERSE_COUNTER_FLAG_CODE, $attemptsCount);
+            $result = $this->connector->execute('update');
         }
-        $this->configWriter->delete(BaseUrlConfigPlugin::UPDATE_CRON_STRING_PATH);
-        $this->flagManager->deleteFlag(BaseUrlConfigPlugin::OLD_BASE_URL_FLAG_CODE);
+
+        if ($result || ($attemptsCount <= 0) || (!$this->analyticsToken->isTokenExist())) {
+            $this->exitFromUpdateProcess();
+        }
+
+        return $result;
+    }
+
+    /**
+     * Clean-up flags and refresh configuration
+     */
+    private function exitFromUpdateProcess(): void
+    {
+        $this->flagManager
+            ->deleteFlag(SubscriptionUpdateHandler::SUBSCRIPTION_UPDATE_REVERSE_COUNTER_FLAG_CODE);
+        $this->flagManager->deleteFlag(SubscriptionUpdateHandler::PREVIOUS_BASE_URL_FLAG_CODE);
+        $this->configWriter->delete(SubscriptionUpdateHandler::UPDATE_CRON_STRING_PATH);
         $this->reinitableConfig->reinit();
-        return true;
     }
 }

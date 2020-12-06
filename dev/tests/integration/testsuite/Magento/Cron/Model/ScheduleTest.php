@@ -13,7 +13,7 @@ use \Magento\TestFramework\Helper\Bootstrap;
  *
  * @magentoDbIsolation enabled
  */
-class ScheduleTest extends \PHPUnit_Framework_TestCase
+class ScheduleTest extends \PHPUnit\Framework\TestCase
 {
     /**
      * @var ScheduleFactory
@@ -55,14 +55,35 @@ class ScheduleTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
-     * If there's a job already locked, should not be able to lock another job
+     * If the job is already locked but lock time less than 1 day ago, attempting to lock it again should fail
+     */
+    public function testTryLockJobAlreadyLockedSucceeds()
+    {
+        $offsetInThePast = 2*24*60*60;
+
+        $oldSchedule = $this->scheduleFactory->create()
+            ->setCronExpr("* * * * *")
+            ->setJobCode("test_job")
+            ->setStatus(Schedule::STATUS_RUNNING)
+            ->setCreatedAt(strftime('%Y-%m-%d %H:%M:%S', $this->dateTime->gmtTimestamp() - $offsetInThePast))
+            ->setScheduledAt(strftime('%Y-%m-%d %H:%M', $this->dateTime->gmtTimestamp() - $offsetInThePast + 60))
+            ->setExecutedAt(strftime('%Y-%m-%d %H:%M', $this->dateTime->gmtTimestamp() - $offsetInThePast + 61));
+        $oldSchedule->save();
+
+        $schedule = $this->createSchedule("test_job", Schedule::STATUS_PENDING);
+
+        $this->assertTrue($schedule->tryLockJob());
+    }
+
+    /**
+     * If there's a job already has running status, should  be able to set this status for another job
      */
     public function testTryLockJobOtherLockedFails()
     {
         $this->createSchedule("test_job", Schedule::STATUS_RUNNING);
         $schedule = $this->createSchedule("test_job", Schedule::STATUS_PENDING, 60);
 
-        $this->assertFalse($schedule->tryLockJob());
+        $this->assertTrue($schedule->tryLockJob());
     }
 
     /**

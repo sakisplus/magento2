@@ -12,6 +12,7 @@ namespace Magento\Framework\View\Asset;
  * This class is a value object with lazy loading of some of its data (content, physical file path)
  *
  * @api
+ * @since 100.0.2
  */
 class File implements MergeableInterface
 {
@@ -166,6 +167,7 @@ class File implements MergeableInterface
      * Get source content type
      *
      * @return string
+     * @since 101.0.0
      */
     public function getSourceContentType()
     {

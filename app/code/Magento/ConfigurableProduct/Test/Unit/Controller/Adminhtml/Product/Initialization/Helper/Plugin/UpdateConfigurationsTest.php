@@ -18,7 +18,7 @@ use Magento\Catalog\Model\Product;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  * @package Magento\ConfigurableProduct\Test\Unit\Controller\Adminhtml\Product\Initialization\Helper\Plugin
  */
-class UpdateConfigurationsTest extends \PHPUnit_Framework_TestCase
+class UpdateConfigurationsTest extends \PHPUnit\Framework\TestCase
 {
     /**
      * @var UpdateConfigurations
@@ -136,7 +136,9 @@ class UpdateConfigurationsTest extends \PHPUnit_Framework_TestCase
                 'swatch_image' => 'simple2_swatch_image',
                 'small_image' => 'simple2_small_image',
                 'thumbnail' => 'simple2_thumbnail',
-                'image' => 'simple2_image'
+                'image' => 'simple2_image',
+                'product_has_weight' => 1,
+                'type_id' => 'simple'
             ],
             'product3' => [
                 'quantity_and_stock_status' => ['qty' => '3']
@@ -153,7 +155,7 @@ class UpdateConfigurationsTest extends \PHPUnit_Framework_TestCase
             ->willReturnMap(
                 [
                     ['store', 0, 0],
-                    ['configurable-matrix-serialized', '[]', json_encode($configurableMatrix)]
+                    ['configurable-matrix-serialized', "[]", json_encode($configurableMatrix)]
                 ]
             );
         $this->variationHandlerMock->expects(static::once())
@@ -185,6 +187,7 @@ class UpdateConfigurationsTest extends \PHPUnit_Framework_TestCase
      *
      * @param array $expectedData
      * @param bool $hasDataChanges
+     * @param bool $wasChanged
      * @return Product|\PHPUnit_Framework_MockObject_MockObject
      */
     protected function getProductMock(array $expectedData = null, $hasDataChanges = false, $wasChanged = false)
@@ -209,5 +212,31 @@ class UpdateConfigurationsTest extends \PHPUnit_Framework_TestCase
                 ->willReturnSelf();
         }
         return $productMock;
+    }
+
+    /**
+     * Test for no exceptions if configurable matrix is empty string.
+     */
+    public function testAfterInitializeEmptyMatrix()
+    {
+        $productMock = $this->getProductMock();
+
+        $this->requestMock->expects(static::any())
+            ->method('getParam')
+            ->willReturnMap(
+                [
+                    ['store', 0, 0],
+                    ['configurable-matrix-serialized', null, ''],
+                ]
+            );
+
+        $this->variationHandlerMock->expects(static::once())
+            ->method('duplicateImagesForVariations')
+            ->with([])
+            ->willReturn([]);
+
+        $this->updateConfigurations->afterInitialize($this->subjectMock, $productMock);
+
+        $this->assertEmpty($productMock->getData());
     }
 }

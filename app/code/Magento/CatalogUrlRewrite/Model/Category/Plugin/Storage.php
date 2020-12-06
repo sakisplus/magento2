@@ -11,12 +11,19 @@ use Magento\UrlRewrite\Model\UrlFinderInterface;
 use Magento\UrlRewrite\Service\V1\Data\UrlRewrite;
 use Magento\CatalogUrlRewrite\Model\ResourceModel\Category\Product;
 
+/**
+ * Storage Plugin
+ */
 class Storage
 {
-    /** @var UrlFinderInterface */
+    /**
+     * @var \Magento\UrlRewrite\Model\UrlFinderInterface
+     */
     private $urlFinder;
 
-    /** @var Product */
+    /**
+     * @var \Magento\CatalogUrlRewrite\Model\ResourceModel\Category\Product
+     */
     private $productResource;
 
     /**
@@ -32,16 +39,18 @@ class Storage
     }
 
     /**
+     * Save product/category urlRewrite association
+     *
      * @param \Magento\UrlRewrite\Model\StorageInterface $object
-     * @param null $result
+     * @param \Magento\UrlRewrite\Service\V1\Data\UrlRewrite[] $result
      * @param \Magento\UrlRewrite\Service\V1\Data\UrlRewrite[] $urls
-     * @return void
+     * @return \Magento\UrlRewrite\Service\V1\Data\UrlRewrite[]
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
-    public function afterReplace(StorageInterface $object, $result, array $urls)
+    public function afterReplace(StorageInterface $object, array $result, array $urls)
     {
         $toSave = [];
-        foreach ($this->filterUrls($urls) as $record) {
+        foreach ($this->filterUrls($result) as $record) {
             $metadata = $record->getMetadata();
             $toSave[] = [
                 'url_rewrite_id' => $record->getUrlRewriteId(),
@@ -49,12 +58,15 @@ class Storage
                 'product_id' => $record->getEntityId(),
             ];
         }
-        if ($toSave) {
+        if (count($toSave) > 0) {
             $this->productResource->saveMultiple($toSave);
         }
+        return $result;
     }
 
     /**
+     * Remove product/category urlRewrite association
+     *
      * @param \Magento\UrlRewrite\Model\StorageInterface $object
      * @param array $data
      * @return void
@@ -66,6 +78,8 @@ class Storage
     }
 
     /**
+     * Filter urls
+     *
      * @param \Magento\UrlRewrite\Service\V1\Data\UrlRewrite[] $urls
      * @return \Magento\UrlRewrite\Service\V1\Data\UrlRewrite[]
      */
@@ -91,6 +105,8 @@ class Storage
     }
 
     /**
+     * Check if url is correct
+     *
      * @param UrlRewrite $url
      * @return bool
      */

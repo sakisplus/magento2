@@ -8,7 +8,7 @@ namespace Magento\Reports\Model\ResourceModel\Report\Product\Viewed;
 /**
  * @magentoAppArea adminhtml
  */
-class CollectionTest extends \PHPUnit_Framework_TestCase
+class CollectionTest extends \PHPUnit\Framework\TestCase
 {
     /**
      * @var \Magento\Reports\Model\ResourceModel\Report\Product\Viewed\Collection
@@ -27,6 +27,7 @@ class CollectionTest extends \PHPUnit_Framework_TestCase
 
     /**
      * @magentoDataFixture Magento/Reports/_files/viewed_products.php
+     * @magentoConfigFixture default/reports/options/enabled 1
      */
     public function testGetItems()
     {

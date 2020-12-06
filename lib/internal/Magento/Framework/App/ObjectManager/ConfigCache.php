@@ -68,7 +68,7 @@ class ConfigCache implements \Magento\Framework\ObjectManager\ConfigCacheInterfa
      * Get serializer
      *
      * @return SerializerInterface
-     * @deprecated
+     * @deprecated 101.0.0
      */
     private function getSerializer()
     {

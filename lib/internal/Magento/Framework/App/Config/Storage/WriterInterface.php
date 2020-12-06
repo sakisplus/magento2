@@ -9,6 +9,11 @@ namespace Magento\Framework\App\Config\Storage;
 
 use Magento\Framework\App\Config\ScopeConfigInterface;
 
+/**
+ * Interface \Magento\Framework\App\Config\Storage\WriterInterface
+ * @api
+ * @since 100.0.2
+ */
 interface WriterInterface
 {
     /**

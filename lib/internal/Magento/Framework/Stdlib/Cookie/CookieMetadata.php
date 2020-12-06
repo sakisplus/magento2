@@ -8,6 +8,7 @@ namespace Magento\Framework\Stdlib\Cookie;
 /**
  * Class CookieMetadata
  * @api
+ * @since 100.0.2
  */
 class CookieMetadata
 {
@@ -21,11 +22,7 @@ class CookieMetadata
     const KEY_DURATION = 'duration';
     /**#@-*/
 
-    /**
-     * Store the metadata in array format to distinguish between null values and no value set.
-     *
-     * @var array
-     */
+    /**#@-*/
     private $metadata;
 
     /**

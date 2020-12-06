@@ -29,9 +29,7 @@ class Container implements Layout\ReaderInterface
     const CONTAINER_OPT_DISPLAY = 'display';
     /**#@-*/
 
-    /**
-     * @var \Magento\Framework\View\Layout\ScheduledStructure\Helper
-     */
+    /**#@-*/
     protected $helper;
 
     /**
@@ -54,7 +52,7 @@ class Container implements Layout\ReaderInterface
     }
 
     /**
-     * @return string[]
+     * @inheritdoc
      */
     public function getSupportedNodes()
     {
@@ -62,12 +60,7 @@ class Container implements Layout\ReaderInterface
     }
 
     /**
-     * {@inheritdoc}
-     *
-     * @param Context $readerContext
-     * @param Layout\Element $currentElement
-     * @param Layout\Element $parentElement
-     * @return $this
+     * @inheritdoc
      */
     public function interpret(Context $readerContext, Layout\Element $currentElement)
     {

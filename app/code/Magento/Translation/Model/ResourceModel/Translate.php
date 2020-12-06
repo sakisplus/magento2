@@ -10,6 +10,9 @@ use Magento\Framework\App\DeploymentConfig;
 use Magento\Framework\App\Config;
 use Magento\Translation\App\Config\Type\Translation;
 
+/**
+ * Class responsible for reading translation from database.
+ */
 class Translate extends \Magento\Framework\Model\ResourceModel\Db\AbstractDb implements
     \Magento\Framework\Translate\ResourceInterface
 {
@@ -87,7 +90,9 @@ class Translate extends \Magento\Framework\Model\ResourceModel\Db\AbstractDb imp
                 ->where('locale = :locale')
                 ->order('store_id');
             $bind = [':locale' => $locale, ':store_id' => $storeId];
-            $dbData = $connection->fetchPairs($select, $bind);
+            $dbData = array_map(function ($value) {
+                return htmlspecialchars_decode($value);
+            }, $connection->fetchPairs($select, $bind));
             $data = array_replace($data, $dbData);
         }
         return $data;
@@ -169,7 +174,9 @@ class Translate extends \Magento\Framework\Model\ResourceModel\Db\AbstractDb imp
     }
 
     /**
-     * @deprecated
+     * Get deploy configurations.
+     *
+     * @deprecated 100.1.2
      * @return DeploymentConfig
      */
     private function getDeployedConfig()
@@ -181,7 +188,9 @@ class Translate extends \Magento\Framework\Model\ResourceModel\Db\AbstractDb imp
     }
 
     /**
-     * @deprecated
+     * Get app configurations.
+     *
+     * @deprecated 100.1.2
      * @return Config
      */
     private function getAppConfig()

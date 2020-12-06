@@ -8,7 +8,7 @@ namespace Magento\CatalogSearch\Test\Unit\Model\Indexer\Fulltext\Plugin;
 use Magento\CatalogSearch\Model\Indexer\Fulltext\Plugin\Attribute;
 use Magento\Framework\TestFramework\Unit\Helper\ObjectManager;
 
-class AttributeTest extends \PHPUnit_Framework_TestCase
+class AttributeTest extends \PHPUnit\Framework\TestCase
 {
     /**
      * @var \PHPUnit_Framework_MockObject_MockObject|\Magento\Framework\Indexer\IndexerInterface
@@ -48,7 +48,7 @@ class AttributeTest extends \PHPUnit_Framework_TestCase
     protected function setUp()
     {
         $this->objectManager = new ObjectManager($this);
-        $this->subjectMock = $this->getMock(\Magento\Catalog\Model\ResourceModel\Attribute::class, [], [], '', false);
+        $this->subjectMock = $this->createMock(\Magento\Catalog\Model\ResourceModel\Attribute::class);
         $this->indexerMock = $this->getMockForAbstractClass(
             \Magento\Framework\Indexer\IndexerInterface::class,
             [],
@@ -58,19 +58,13 @@ class AttributeTest extends \PHPUnit_Framework_TestCase
             true,
             ['getId', 'getState', '__wakeup']
         );
-        $this->indexerRegistryMock = $this->getMock(
+        $this->indexerRegistryMock = $this->createPartialMock(
             \Magento\Framework\Indexer\IndexerRegistry::class,
-            ['get'],
-            [],
-            '',
-            false
+            ['get']
         );
-        $this->attributeMock = $this->getMock(
+        $this->attributeMock = $this->createPartialMock(
             \Magento\Catalog\Model\ResourceModel\Eav\Attribute::class,
-            ['dataHasChangedFor', 'isObjectNew', 'getIsSearchable'],
-            [],
-            '',
-            false
+            ['dataHasChangedFor', 'isObjectNew', 'getIsSearchable', 'getData']
         );
         $this->config =  $this->getMockBuilder(\Magento\Framework\Search\Request\Config::class)
             ->disableOriginalConstructor()
@@ -91,7 +85,7 @@ class AttributeTest extends \PHPUnit_Framework_TestCase
             ->method('isObjectNew')
             ->willReturn(true);
         $this->attributeMock->expects($this->once())
-            ->method('dataHasChangedFor')
+            ->method('getData')
             ->with('is_searchable')
             ->willReturn(true);
         $this->assertEquals(
@@ -108,27 +102,52 @@ class AttributeTest extends \PHPUnit_Framework_TestCase
         );
     }
 
-    public function testAfterSaveWithInvalidation()
+    /**
+     * Test afterSave with invalidation.
+     *
+     * @param bool $saveNeedInvalidation
+     * @param bool $saveIsNew
+     * @dataProvider afterSaveDataProvider
+     */
+    public function testAfterSaveWithInvalidation(bool $saveNeedInvalidation, bool $saveIsNew)
     {
         $model = $this->objectManager->getObject(
             Attribute::class,
             [
                 'indexerRegistry' => $this->indexerRegistryMock,
                 'config' => $this->config,
-                'saveNeedInvalidation' => true,
-                'saveIsNew' => true
+                'saveNeedInvalidation' => $saveNeedInvalidation,
+                'saveIsNew' => $saveIsNew,
             ]
         );
 
-        $this->indexerMock->expects($this->once())->method('invalidate');
-        $this->prepareIndexer();
-        $this->config->expects($this->once())
-            ->method('reset');
+        if ($saveNeedInvalidation) {
+            $this->indexerMock->expects($this->once())->method('invalidate');
+            $this->prepareIndexer();
+        }
+
+        if ($saveIsNew || $saveNeedInvalidation) {
+            $this->config->expects($this->once())
+                ->method('reset');
+        }
 
         $this->assertEquals(
             $this->subjectMock,
             $model->afterSave($this->subjectMock, $this->subjectMock)
         );
+    }
+
+    /**
+     * @return array
+     */
+    public function afterSaveDataProvider(): array
+    {
+        return [
+            'save_new_with_invalidation' => ['saveNeedInvalidation' => true, 'isNew' => true],
+            'save_new_without_invalidation' => ['saveNeedInvalidation' => false, 'isNew' => true],
+            'update_existing_with_inalidation' => ['saveNeedInvalidation' => true, 'isNew' => false],
+            'update_existing_without_inalidation' => ['saveNeedInvalidation' => false, 'isNew' => false],
+        ];
     }
 
     public function testBeforeDelete()

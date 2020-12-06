@@ -11,12 +11,7 @@ use Magento\Quote\Api\CartRepositoryInterface;
 use Magento\Braintree\Gateway\Config\PayPal\Config;
 use Magento\Braintree\Model\Paypal\Helper\ShippingMethodUpdater;
 
-/**
- * Class ShippingMethodUpdaterTest
- *
- * @see \Magento\Braintree\Model\Paypal\Helper\ShippingMethodUpdater
- */
-class ShippingMethodUpdaterTest extends \PHPUnit_Framework_TestCase
+class ShippingMethodUpdaterTest extends \PHPUnit\Framework\TestCase
 {
     const TEST_SHIPPING_METHOD = 'test-shipping-method';
 
@@ -36,6 +31,11 @@ class ShippingMethodUpdaterTest extends \PHPUnit_Framework_TestCase
      * @var Address|\PHPUnit_Framework_MockObject_MockObject
      */
     private $shippingAddressMock;
+
+    /**
+     * @var Address|\PHPUnit_Framework_MockObject_MockObject
+     */
+    private $billingAddressMock;
 
     /**
      * @var ShippingMethodUpdater
@@ -146,7 +146,7 @@ class ShippingMethodUpdaterTest extends \PHPUnit_Framework_TestCase
     {
         if (!isset($this->billingAddressMock)) {
             $this->billingAddressMock = $this->getMockBuilder(Address::class)
-                ->setMethods(['setShouldIgnoreValidation', 'getEmail'])
+                ->setMethods(['setShouldIgnoreValidation', 'getEmail', 'setSameAsBilling'])
                 ->disableOriginalConstructor()
                 ->getMock();
         }
@@ -169,7 +169,8 @@ class ShippingMethodUpdaterTest extends \PHPUnit_Framework_TestCase
                     'collectTotals',
                     'getBillingAddress',
                     'getShippingAddress',
-                    'getIsVirtual'
+                    'getIsVirtual',
+                    'getExtensionAttributes'
                 ]
             )->disableOriginalConstructor()
             ->getMock();

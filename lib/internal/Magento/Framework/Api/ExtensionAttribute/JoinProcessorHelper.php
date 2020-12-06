@@ -7,7 +7,7 @@
 namespace Magento\Framework\Api\ExtensionAttribute;
 
 use Magento\Framework\Api\ExtensionAttribute\Config;
-use Magento\Framework\Api\ExtensionAttribute\Config\Converter as Converter;
+use Magento\Framework\Api\ExtensionAttribute\Config\Converter;
 use Magento\Framework\Api\SimpleDataObjectConverter;
 
 /**
@@ -15,10 +15,14 @@ use Magento\Framework\Api\SimpleDataObjectConverter;
  */
 class JoinProcessorHelper
 {
-    /** @var Config */
+    /**
+     * @var \Magento\Framework\Api\ExtensionAttribute\Config
+     */
     private $config;
 
-    /** @var JoinDataInterfaceFactory */
+    /**
+     * @var \Magento\Framework\Api\ExtensionAttribute\JoinDataInterfaceFactory
+     */
     private $joinDataInterfaceFactory;
 
     /**

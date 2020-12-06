@@ -5,8 +5,13 @@
  */
 namespace Magento\Config\Model\Config\Structure;
 
+use Magento\Config\Model\Config\StructureElementInterface;
+
 /**
  * @api
+ * @since 100.0.2
+ * @deprecated 101.1.0
+ * @see StructureElementInterface
  */
 interface ElementInterface
 {

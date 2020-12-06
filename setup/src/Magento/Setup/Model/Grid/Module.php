@@ -12,6 +12,8 @@ use Magento\Setup\Model\PackagesData;
 
 /**
  * Module grid
+ *
+ * @deprecated Starting from Magento 2.3.6 Web Setup Wizard is deprecated
  */
 class Module
 {
@@ -178,7 +180,7 @@ class Module
     private function addGeneralInfo(array $items)
     {
         foreach ($items as &$item) {
-            $item['moduleName'] = $item['moduleName'] ?: $this->packageInfo->getModuleName($item['name']);
+            $item['moduleName'] = $item['moduleName'] ?? $this->packageInfo->getModuleName($item['name']);
             $item['enable'] = $this->moduleList->has($item['moduleName']);
             $vendorSource = $item['name'] == self::UNKNOWN_PACKAGE_NAME ? $item['moduleName'] : $item['name'];
             $item['vendor'] = ucfirst(current(preg_split('%[/_]%', $vendorSource)));

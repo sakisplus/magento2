@@ -9,6 +9,7 @@ namespace Magento\Framework\Stdlib\DateTime\Filter;
  * Date/Time filter. Converts datetime from localized to internal format.
  *
  * @api
+ * @since 100.0.2
  */
 class DateTime extends Date
 {
@@ -37,6 +38,7 @@ class DateTime extends Date
      * @param string $value
      * @return string
      * @throws \Exception
+     * @since 100.1.0
      */
     public function filter($value)
     {

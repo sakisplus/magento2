@@ -21,7 +21,7 @@ class ConfigFixture
     /**
      * Test instance that is available between 'startTest' and 'stopTest' events
      *
-     * @var \PHPUnit_Framework_TestCase
+     * @var \PHPUnit\Framework\TestCase
      */
     protected $_currentTest;
 
@@ -38,6 +38,11 @@ class ConfigFixture
      * @var array
      */
     private $_storeConfigValues = [];
+
+    /**
+     * @var string
+     */
+    protected $annotation = 'magentoConfigFixture';
 
     /**
      * Retrieve configuration node value
@@ -98,16 +103,16 @@ class ConfigFixture
     /**
      * Assign required config values and save original ones
      *
-     * @param \PHPUnit_Framework_TestCase $test
+     * @param \PHPUnit\Framework\TestCase $test
      * @SuppressWarnings(PHPMD.UnusedLocalVariable)
      */
-    protected function _assignConfigData(\PHPUnit_Framework_TestCase $test)
+    protected function _assignConfigData(\PHPUnit\Framework\TestCase $test)
     {
         $annotations = $test->getAnnotations();
-        if (!isset($annotations['method']['magentoConfigFixture'])) {
+        if (!isset($annotations['method'][$this->annotation])) {
             return;
         }
-        foreach ($annotations['method']['magentoConfigFixture'] as $configPathAndValue) {
+        foreach ($annotations['method'][$this->annotation] as $configPathAndValue) {
             if (preg_match('/^.+?(?=_store\s)/', $configPathAndValue, $matches)) {
                 /* Store-scoped config value */
                 $storeCode = $matches[0] != 'current' ? $matches[0] : null;
@@ -154,9 +159,9 @@ class ConfigFixture
     /**
      * Handler for 'startTest' event
      *
-     * @param \PHPUnit_Framework_TestCase $test
+     * @param \PHPUnit\Framework\TestCase $test
      */
-    public function startTest(\PHPUnit_Framework_TestCase $test)
+    public function startTest(\PHPUnit\Framework\TestCase $test)
     {
         $this->_currentTest = $test;
         $this->_assignConfigData($test);
@@ -165,11 +170,11 @@ class ConfigFixture
     /**
      * Handler for 'endTest' event
      *
-     * @param \PHPUnit_Framework_TestCase $test
+     * @param \PHPUnit\Framework\TestCase $test
      *
      * @SuppressWarnings(PHPMD.UnusedFormalParameter)
      */
-    public function endTest(\PHPUnit_Framework_TestCase $test)
+    public function endTest(\PHPUnit\Framework\TestCase $test)
     {
         $this->_currentTest = null;
         $this->_restoreConfigData();

@@ -3,6 +3,7 @@
  * Copyright © Magento, Inc. All rights reserved.
  * See COPYING.txt for license details.
  */
+
 namespace Magento\Vault\Model\Ui\Adminhtml;
 
 use Magento\Framework\Api\FilterBuilder;
@@ -23,11 +24,13 @@ use Magento\Vault\Model\Ui\TokenUiComponentProviderInterface;
 use Magento\Vault\Model\VaultPaymentInterface;
 
 /**
- * Class ConfigProvider
+ * Provide tokens config
  * @api
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
+ * @SuppressWarnings(PHPMD.CookieAndSessionMisuse)
  *
  * @api
+ * @since 100.1.0
  */
 class TokensConfigProvider
 {
@@ -111,8 +114,11 @@ class TokensConfigProvider
     }
 
     /**
+     * Get list of tokens components
+     *
      * @param string $vaultPaymentCode
      * @return TokenUiComponentInterface[]
+     * @since 100.1.0
      */
     public function getTokensComponents($vaultPaymentCode)
     {
@@ -181,6 +187,13 @@ class TokensConfigProvider
                     ->create(),
                 ]
         );
+        $this->searchCriteriaBuilder->addFilters(
+            [
+                $this->filterBuilder->setField(PaymentTokenInterface::IS_VISIBLE)
+                    ->setValue(1)
+                    ->create(),
+            ]
+        );
 
         $searchCriteria = $this->searchCriteriaBuilder->create();
 
@@ -192,6 +205,8 @@ class TokensConfigProvider
     }
 
     /**
+     * Get component provider
+     *
      * @param string $vaultProviderCode
      * @return TokenUiComponentProviderInterface|null
      */
@@ -207,6 +222,7 @@ class TokensConfigProvider
 
     /**
      * Get active vault payment by code
+     *
      * @param string $vaultPaymentCode
      * @return VaultPaymentInterface|null
      */
@@ -219,13 +235,14 @@ class TokensConfigProvider
 
     /**
      * Returns payment token entity id by order payment id
+     *
      * @return int|null
      */
     private function getPaymentTokenEntityId()
     {
         $paymentToken = $this->getPaymentTokenManagement()->getByPaymentId($this->getOrderPaymentEntityId());
         if ($paymentToken === null) {
-            throw new NoSuchEntityException(__('No available payment tokens for specified order payment.'));
+            throw new NoSuchEntityException(__('No payment tokens are available for the specified order payment.'));
         }
         return $paymentToken->getEntityId();
     }
@@ -234,6 +251,7 @@ class TokensConfigProvider
      * Returns order payment entity id
      * Using 'getReordered' for Reorder action
      * Using 'getOrder' for Edit action
+     *
      * @return int
      */
     private function getOrderPaymentEntityId()
@@ -247,8 +265,9 @@ class TokensConfigProvider
 
     /**
      * Get payment data helper instance
+     *
      * @return Data
-     * @deprecated
+     * @deprecated 100.1.0
      */
     private function getPaymentDataHelper()
     {
@@ -260,8 +279,9 @@ class TokensConfigProvider
 
     /**
      * Returns order repository instance
+     *
      * @return OrderRepositoryInterface
-     * @deprecated
+     * @deprecated 100.2.0
      */
     private function getOrderRepository()
     {
@@ -275,8 +295,9 @@ class TokensConfigProvider
 
     /**
      * Returns payment token management instance
+     *
      * @return PaymentTokenManagementInterface
-     * @deprecated
+     * @deprecated 100.2.0
      */
     private function getPaymentTokenManagement()
     {

@@ -9,6 +9,7 @@ namespace Magento\Framework\Simplexml;
  * Base class for simplexml based configurations
  *
  * @api
+ * @since 100.0.2
  */
 class Config
 {
@@ -39,7 +40,7 @@ class Config
      * Initializes XML for this configuration
      *
      * @see \Magento\Framework\Simplexml\Config::setXml
-     * @param string|Element $sourceData
+     * @param Element|string $sourceData
      */
     public function __construct($sourceData = null)
     {

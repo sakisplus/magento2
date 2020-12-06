@@ -12,6 +12,8 @@ use Zend\View\Model\JsonModel;
 
 /**
  * Controller for other components grid on select version page
+ *
+ * @deprecated Starting from Magento 2.3.6 Web Setup Wizard is deprecated
  */
 class OtherComponentsGrid extends AbstractActionController
 {
@@ -81,7 +83,7 @@ class OtherComponentsGrid extends AbstractActionController
                         'id' => $packageInfo[InfoCommand::CURRENT_VERSION],
                         'name' => $packageInfo[InfoCommand::CURRENT_VERSION]
                     ];
-                    
+
                     $versions[0]['name'] .= ' (latest)';
                     $versions[count($versions) - 1]['name'] .= ' (current)';
 

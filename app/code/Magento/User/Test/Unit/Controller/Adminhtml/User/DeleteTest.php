@@ -12,7 +12,7 @@ use Magento\Framework\Exception\AuthenticationException;
 /**
  * Test class for \Magento\User\Controller\Adminhtml\User\Delete testing
  */
-class DeleteTest extends \PHPUnit_Framework_TestCase
+class DeleteTest extends \PHPUnit\Framework\TestCase
 {
     /**
      * @var \Magento\User\Controller\Adminhtml\User\Delete
@@ -81,7 +81,7 @@ class DeleteTest extends \PHPUnit_Framework_TestCase
 
         $this->userMock = $this->getMockBuilder(\Magento\User\Model\User::class)
             ->disableOriginalConstructor()
-            ->setMethods(['getId', 'performIdentityCheck', 'delete'])
+            ->setMethods(['getId', 'performIdentityCheck', 'delete', 'load'])
             ->getMock();
 
         $this->userFactoryMock = $this->getMockBuilder(\Magento\User\Model\UserFactory::class)
@@ -134,15 +134,18 @@ class DeleteTest extends \PHPUnit_Framework_TestCase
 
         $this->requestMock->expects($this->any())
             ->method('getPost')
-            ->willReturnMap([
-                ['user_id', $userId],
-                [\Magento\User\Block\User\Edit\Tab\Main::CURRENT_USER_PASSWORD_FIELD, $currentUserPassword],
-            ]);
+            ->willReturnMap(
+                [
+                    ['user_id', $userId],
+                    [\Magento\User\Block\User\Edit\Tab\Main::CURRENT_USER_PASSWORD_FIELD, $currentUserPassword],
+                ]
+            );
 
         $userMock = clone $currentUserMock;
 
         $this->userFactoryMock->expects($this->any())->method('create')->will($this->returnValue($userMock));
         $this->responseMock->expects($this->any())->method('setRedirect')->willReturnSelf();
+        $this->userMock->expects($this->any())->method('load')->with($userId)->willReturn($this->userFactoryMock);
         $this->userMock->expects($this->any())->method('delete')->willReturnSelf();
         $this->messageManagerMock->expects($this->once())->method($resultMethod);
 
@@ -152,36 +155,35 @@ class DeleteTest extends \PHPUnit_Framework_TestCase
     /**
      * @return void
      */
-    public function testEmptyPasswordThrowsException()
+    public function testEmptyPassword()
     {
-        try {
-            $currentUserId = 1;
-            $userId = 2;
+        $currentUserId = 1;
+        $userId = 2;
 
-            $currentUserMock = $this->userMock;
-            $this->authSessionMock->expects($this->any())
-                ->method('getUser')
-                ->will($this->returnValue($currentUserMock));
+        $currentUserMock = $this->userMock;
+        $this->authSessionMock->expects($this->any())
+            ->method('getUser')
+            ->will($this->returnValue($currentUserMock));
 
-            $currentUserMock->expects($this->any())->method('getId')->willReturn($currentUserId);
+        $currentUserMock->expects($this->any())->method('getId')->willReturn($currentUserId);
 
-            $this->objectManagerMock
-                ->expects($this->any())
-                ->method('get')
-                ->with(Session::class)
-                ->willReturn($this->authSessionMock);
+        $this->objectManagerMock
+            ->expects($this->any())
+            ->method('get')
+            ->with(Session::class)
+            ->willReturn($this->authSessionMock);
 
-            $this->requestMock->expects($this->any())
-                ->method('getPost')
-                ->willReturnMap([
+        $this->requestMock->expects($this->any())
+            ->method('getPost')
+            ->willReturnMap(
+                [
                     ['user_id', $userId],
                     [\Magento\User\Block\User\Edit\Tab\Main::CURRENT_USER_PASSWORD_FIELD, ''],
-                ]);
+                ]
+            );
 
-            $this->controller->execute();
-        } catch (AuthenticationException $e) {
-            $this->assertEquals($e->getMessage(), 'You have entered an invalid password for current user.');
-        }
+        $result = $this->controller->execute();
+        $this->assertNull($result);
     }
 
     /**
@@ -194,8 +196,8 @@ class DeleteTest extends \PHPUnit_Framework_TestCase
         return [
             [
                 'currentUserPassword' => '123123q',
-                'userId'              => 1,
-                'currentUserId'       => 2,
+                'userId'              => 2,
+                'currentUserId'       => 1,
                 'resultMethod'        => 'addSuccess',
             ],
             [

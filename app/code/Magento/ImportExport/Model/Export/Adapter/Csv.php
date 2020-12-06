@@ -5,12 +5,16 @@
  */
 namespace Magento\ImportExport\Model\Export\Adapter;
 
+use Magento\Framework\Exception\LocalizedException;
+use Magento\Framework\Filesystem\File\Write;
+
 /**
  * Export adapter csv.
  *
  * @api
+ * @since 100.0.2
  */
-class Csv extends \Magento\ImportExport\Model\Export\Adapter\AbstractAdapter
+class Csv extends AbstractAdapter
 {
     /**
      * Field delimiter.
@@ -29,21 +33,21 @@ class Csv extends \Magento\ImportExport\Model\Export\Adapter\AbstractAdapter
     /**
      * Source file handler.
      *
-     * @var \Magento\Framework\Filesystem\File\Write
+     * @var Write
      */
     protected $_fileHandler;
 
     /**
-     * {@inheritdoc }
+     * Object destructor
+     * @since 100.3.5
      */
-    public function __construct(\Magento\Framework\Filesystem $filesystem, $destination = null)
+    public function __destruct()
     {
-        register_shutdown_function([$this, 'destruct']);
-        parent::__construct($filesystem, $destination);
+        $this->destruct();
     }
 
     /**
-     * Object destructor.
+     * Clean cached values
      *
      * @return void
      */
@@ -51,11 +55,12 @@ class Csv extends \Magento\ImportExport\Model\Export\Adapter\AbstractAdapter
     {
         if (is_object($this->_fileHandler)) {
             $this->_fileHandler->close();
+            $this->_directoryHandle->delete($this->_destination);
         }
     }
 
     /**
-     * Method called as last step of object instance creation. Can be overrided in child classes.
+     * Method called as last step of object instance creation. Can be overridden in child classes.
      *
      * @return $this
      */
@@ -95,7 +100,7 @@ class Csv extends \Magento\ImportExport\Model\Export\Adapter\AbstractAdapter
     public function setHeaderCols(array $headerColumns)
     {
         if (null !== $this->_headerCols) {
-            throw new \Magento\Framework\Exception\LocalizedException(__('The header column names are already set.'));
+            throw new LocalizedException(__('The header column names are already set.'));
         }
         if ($headerColumns) {
             foreach ($headerColumns as $columnName) {

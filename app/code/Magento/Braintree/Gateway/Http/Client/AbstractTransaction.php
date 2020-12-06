@@ -6,7 +6,7 @@
 
 namespace Magento\Braintree\Gateway\Http\Client;
 
-use Magento\Braintree\Model\Adapter\BraintreeAdapter;
+use Magento\Braintree\Model\Adapter\BraintreeAdapterFactory;
 use Magento\Payment\Gateway\Http\ClientException;
 use Magento\Payment\Gateway\Http\ClientInterface;
 use Magento\Payment\Gateway\Http\TransferInterface;
@@ -15,6 +15,9 @@ use Psr\Log\LoggerInterface;
 
 /**
  * Class AbstractTransaction
+ *
+ * @deprecated Starting from Magento 2.3.6 Braintree payment method core integration is deprecated
+ * in favor of official payment integration available on the marketplace
  */
 abstract class AbstractTransaction implements ClientInterface
 {
@@ -29,22 +32,22 @@ abstract class AbstractTransaction implements ClientInterface
     protected $customLogger;
 
     /**
-     * @var BraintreeAdapter
+     * @var BraintreeAdapterFactory
      */
-    protected $adapter;
+    protected $adapterFactory;
 
     /**
      * Constructor
      *
      * @param LoggerInterface $logger
      * @param Logger $customLogger
-     * @param BraintreeAdapter $transaction
+     * @param BraintreeAdapterFactory $adapterFactory
      */
-    public function __construct(LoggerInterface $logger, Logger $customLogger, BraintreeAdapter $adapter)
+    public function __construct(LoggerInterface $logger, Logger $customLogger, BraintreeAdapterFactory $adapterFactory)
     {
         $this->logger = $logger;
         $this->customLogger = $customLogger;
-        $this->adapter = $adapter;
+        $this->adapterFactory = $adapterFactory;
     }
 
     /**

@@ -19,7 +19,7 @@ use Symfony\Component\Console\Application;
 /**
  * Class ObjectManagerProviderTest
  */
-class ObjectManagerProviderTest extends \PHPUnit_Framework_TestCase
+class ObjectManagerProviderTest extends \PHPUnit\Framework\TestCase
 {
     /**
      * @var ServiceLocatorInterface|\PHPUnit_Framework_MockObject_MockObject
@@ -38,8 +38,8 @@ class ObjectManagerProviderTest extends \PHPUnit_Framework_TestCase
 
     public function setUp()
     {
-        $this->serviceLocatorMock = $this->getMock(ServiceLocatorInterface::class);
-        $this->bootstrapMock = $this->getMock(Bootstrap::class);
+        $this->serviceLocatorMock = $this->createMock(ServiceLocatorInterface::class);
+        $this->bootstrapMock = $this->createMock(Bootstrap::class);
 
         $this->model = new ObjectManagerProvider($this->serviceLocatorMock, $this->bootstrapMock);
     }
@@ -47,6 +47,14 @@ class ObjectManagerProviderTest extends \PHPUnit_Framework_TestCase
     public function testGet()
     {
         $initParams = ['param' => 'value'];
+        $commands = [
+            new Command('setup:install'),
+            new Command('setup:upgrade'),
+        ];
+
+        $application = $this->getMockBuilder(Application::class)
+            ->disableOriginalConstructor()
+            ->getMockForAbstractClass();
 
         $this->serviceLocatorMock
             ->expects($this->atLeastOnce())
@@ -56,16 +64,21 @@ class ObjectManagerProviderTest extends \PHPUnit_Framework_TestCase
                     [InitParamListener::BOOTSTRAP_PARAM, $initParams],
                     [
                         Application::class,
-                        $this->getMockBuilder(Application::class)->disableOriginalConstructor()->getMock(),
+                        $application,
                     ],
                 ]
             );
 
-        $objectManagerMock = $this->getMock(ObjectManagerInterface::class);
+        $commandListMock = $this->createMock(CommandListInterface::class);
+        $commandListMock->expects($this->once())
+            ->method('getCommands')
+            ->willReturn($commands);
+
+        $objectManagerMock = $this->createMock(ObjectManagerInterface::class);
         $objectManagerMock->expects($this->once())
             ->method('create')
             ->with(CommandListInterface::class)
-            ->willReturn($this->getCommandListMock());
+            ->willReturn($commandListMock);
 
         $objectManagerFactoryMock = $this->getMockBuilder(ObjectManagerFactory::class)
             ->disableOriginalConstructor()
@@ -81,18 +94,9 @@ class ObjectManagerProviderTest extends \PHPUnit_Framework_TestCase
             ->willReturn($objectManagerFactoryMock);
 
         $this->assertInstanceOf(ObjectManagerInterface::class, $this->model->get());
-    }
 
-    private function getCommandListMock()
-    {
-        $commandMock = $this->getMockBuilder(Command::class)->disableOriginalConstructor()->getMock();
-        $commandMock->expects($this->once())->method('setApplication');
-
-        $commandListMock = $this->getMock(CommandListInterface::class);
-        $commandListMock->expects($this->once())
-            ->method('getCommands')
-            ->willReturn([$commandMock]);
-
-        return $commandListMock;
+        foreach ($commands as $command) {
+            $this->assertSame($application, $command->getApplication());
+        }
     }
 }

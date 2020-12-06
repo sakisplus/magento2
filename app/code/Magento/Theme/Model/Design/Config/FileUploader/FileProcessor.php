@@ -3,6 +3,7 @@
  * Copyright © Magento, Inc. All rights reserved.
  * See COPYING.txt for license details.
  */
+
 namespace Magento\Theme\Model\Design\Config\FileUploader;
 
 use Magento\Framework\Exception\LocalizedException;
@@ -17,6 +18,8 @@ use Magento\Framework\UrlInterface;
 use Magento\Store\Model\StoreManagerInterface;
 
 /**
+ * Design file processor.
+ *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
 class FileProcessor
@@ -75,11 +78,11 @@ class FileProcessor
     }
 
     /**
-     * Save file to temp media directory
+     * Save file to temp media directory.
      *
      * @param  string $fileId
+     *
      * @return array
-     * @throws LocalizedException
      */
     public function saveToTmp($fileId)
     {
@@ -89,11 +92,12 @@ class FileProcessor
         } catch (\Exception $e) {
             $result = ['error' => $e->getMessage(), 'errorcode' => $e->getCode()];
         }
+
         return $result;
     }
 
     /**
-     * Retrieve temp media url
+     * Retrieve temp media url.
      *
      * @param string $file
      * @return string
@@ -101,28 +105,28 @@ class FileProcessor
     protected function getTmpMediaUrl($file)
     {
         return $this->storeManager->getStore()->getBaseUrl(UrlInterface::URL_TYPE_MEDIA)
-            . 'tmp/' . self::FILE_DIR . '/' . $this->prepareFile($file);
+            . 'tmp' . DIRECTORY_SEPARATOR . self::FILE_DIR . DIRECTORY_SEPARATOR . $this->prepareFile($file);
     }
 
     /**
-     * Prepare file
+     * Prepare file.
      *
      * @param string $file
      * @return string
      */
     protected function prepareFile($file)
     {
-        return ltrim(str_replace('\\', '/', $file), '/');
+        return ltrim(str_replace('\\', DIRECTORY_SEPARATOR, $file), DIRECTORY_SEPARATOR);
     }
 
     /**
-     * Retrieve absolute temp media path
+     * Retrieve absolute temp media path.
      *
      * @return string
      */
     protected function getAbsoluteTmpMediaPath()
     {
-        return $this->mediaDirectory->getAbsolutePath('tmp/' . self::FILE_DIR);
+        return $this->mediaDirectory->getAbsolutePath('tmp' . DIRECTORY_SEPARATOR . self::FILE_DIR);
     }
 
     /**
@@ -144,6 +148,8 @@ class FileProcessor
         $uploader->addValidateCallback('size', $backendModel, 'validateMaxSize');
 
         $result = $uploader->save($destination);
+        unset($result['path']);
+
         return $result;
     }
 
@@ -158,7 +164,7 @@ class FileProcessor
     {
         $metadata = $this->metadataProvider->get();
         if (!(isset($metadata[$code]) && isset($metadata[$code]['backend_model']))) {
-            throw new LocalizedException(__('Backend model is not specified for %1', $code));
+            throw new LocalizedException(__('The backend model isn\'t specified for "%1".', $code));
         }
         return $this->backendModelFactory->createByPath($metadata[$code]['path']);
     }

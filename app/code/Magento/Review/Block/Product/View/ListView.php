@@ -9,6 +9,7 @@ namespace Magento\Review\Block\Product\View;
  * Detailed Product Reviews
  *
  * @api
+ * @since 100.0.2
  */
 class ListView extends \Magento\Review\Block\Product\View
 {
@@ -54,7 +55,10 @@ class ListView extends \Magento\Review\Block\Product\View
      */
     protected function _beforeToHtml()
     {
-        $this->getReviewsCollection()->load()->addRateVotes();
+        if ($this->getProductId()) {
+            $this->getReviewsCollection()->load()->addRateVotes();
+        }
+
         return parent::_beforeToHtml();
     }
 

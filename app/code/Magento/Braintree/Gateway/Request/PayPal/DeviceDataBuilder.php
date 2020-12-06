@@ -5,12 +5,15 @@
  */
 namespace Magento\Braintree\Gateway\Request\PayPal;
 
-use Magento\Braintree\Gateway\Helper\SubjectReader;
+use Magento\Braintree\Gateway\SubjectReader;
 use Magento\Braintree\Observer\DataAssignObserver;
 use Magento\Payment\Gateway\Request\BuilderInterface;
 
 /**
  * Class DeviceDataBuilder
+ *
+ * @deprecated Starting from Magento 2.3.6 Braintree payment method core integration is deprecated
+ * in favor of official payment integration available on the marketplace
  */
 class DeviceDataBuilder implements BuilderInterface
 {

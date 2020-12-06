@@ -3,6 +3,7 @@
  * Copyright © Magento, Inc. All rights reserved.
  * See COPYING.txt for license details.
  */
+
 namespace Magento\Customer\Block\Adminhtml\Edit\Tab\View;
 
 use Magento\Customer\Api\AccountManagementInterface;
@@ -152,13 +153,12 @@ class PersonalInfo extends \Magento\Backend\Block\Template
     /**
      * Set customer registry
      *
-     * @param \Magento\Framework\Registry $coreRegistry
+     * @param \Magento\Framework\Registry $customerRegistry
      * @return void
-     * @deprecated
+     * @deprecated 100.1.0
      */
     public function setCustomerRegistry(\Magento\Customer\Model\CustomerRegistry $customerRegistry)
     {
-
         $this->customerRegistry = $customerRegistry;
     }
 
@@ -166,7 +166,7 @@ class PersonalInfo extends \Magento\Backend\Block\Template
      * Get customer registry
      *
      * @return \Magento\Customer\Model\CustomerRegistry
-     * @deprecated
+     * @deprecated 100.1.0
      */
     public function getCustomerRegistry()
     {
@@ -315,11 +315,11 @@ class PersonalInfo extends \Magento\Backend\Block\Template
         try {
             $address = $this->accountManagement->getDefaultBillingAddress($this->getCustomer()->getId());
         } catch (NoSuchEntityException $e) {
-            return __('The customer does not have default billing address.');
+            return $this->escapeHtml(__('The customer does not have default billing address.'));
         }
 
         if ($address === null) {
-            return __('The customer does not have default billing address.');
+            return $this->escapeHtml(__('The customer does not have default billing address.'));
         }
 
         return $this->addressHelper->getFormatTypeRenderer(
@@ -461,7 +461,7 @@ class PersonalInfo extends \Magento\Backend\Block\Template
             'customer/online_customers/online_minutes_interval',
             \Magento\Store\Model\ScopeInterface::SCOPE_STORE
         );
-        return intval($configValue) > 0 ? intval($configValue) : self::DEFAULT_ONLINE_MINUTES_INTERVAL;
+        return (int)$configValue > 0 ? (int)$configValue : self::DEFAULT_ONLINE_MINUTES_INTERVAL;
     }
 
     /**

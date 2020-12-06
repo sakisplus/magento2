@@ -8,7 +8,10 @@
 namespace Magento\Config\Model\Config\Structure\Element;
 
 /**
+ * Element field.
+ *
  * @api
+ * @since 100.0.2
  */
 class Field extends \Magento\Config\Model\Config\Structure\AbstractElement
 {
@@ -242,6 +245,7 @@ class Field extends \Magento\Config\Model\Config\Structure\AbstractElement
      */
     public function getGroupPath()
     {
+        // phpcs:ignore Magento2.Functions.DiscouragedFunction
         return dirname($this->getConfigPath() ?: $this->getPath());
     }
 
@@ -289,6 +293,7 @@ class Field extends \Magento\Config\Model\Config\Structure\AbstractElement
      * Check if the field can be restored to default
      *
      * @return bool
+     * @since 100.1.0
      */
     public function canRestore()
     {

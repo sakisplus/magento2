@@ -9,6 +9,7 @@ namespace Magento\MediaStorage\Model\ResourceModel\File\Storage;
  * Class Database
  *
  * @api
+ * @since 100.0.2
  */
 class Database extends \Magento\MediaStorage\Model\ResourceModel\File\Storage\AbstractStorage
 {
@@ -340,10 +341,14 @@ class Database extends \Magento\MediaStorage\Model\ResourceModel\File\Storage\Ab
             return;
         }
 
-        $likeExpression = $this->_resourceHelper->addLikeEscape($folderName . '/', ['position' => 'start']);
         $this->getConnection()->delete(
             $this->getMainTable(),
-            new \Zend_Db_Expr('filename LIKE ' . $likeExpression)
+            new \Zend_Db_Expr(
+                'directory LIKE ' .
+                $this->_resourceHelper->addLikeEscape($folderName . '/', ['position' => 'start'])
+                . ' ' . \Magento\Framework\DB\Select::SQL_OR . ' ' .
+                $this->getConnection()->prepareSqlCondition('directory', ['seq' => $folderName])
+            )
         );
     }
 

@@ -7,7 +7,7 @@ namespace Magento\Store\Test\Unit\Model\Config;
 
 use Magento\Store\Model\Store;
 
-class PlaceholderTest extends \PHPUnit_Framework_TestCase
+class PlaceholderTest extends \PHPUnit\Framework\TestCase
 {
     /**
      * @var \Magento\Store\Model\Config\Processor\Placeholder
@@ -21,7 +21,7 @@ class PlaceholderTest extends \PHPUnit_Framework_TestCase
 
     protected function setUp()
     {
-        $this->_requestMock = $this->getMock(\Magento\Framework\App\Request\Http::class, [], [], '', false);
+        $this->_requestMock = $this->createMock(\Magento\Framework\App\Request\Http::class);
         $this->_requestMock->expects(
             $this->any()
         )->method(
@@ -54,11 +54,27 @@ class PlaceholderTest extends \PHPUnit_Framework_TestCase
             ],
             'path' => 'value',
             'some_url' => '{{base_url}}some',
+            'level1' => [
+                'level2' => [
+                    'level3' => [
+                        // test that all levels are processed (i.e. implementation is not hardcoded to 3 levels)
+                        'level4' => '{{secure_base_url}}level4'
+                    ]
+                ]
+            ]
         ];
         $expectedResult = $data;
         $expectedResult['web']['unsecure']['base_link_url'] = 'http://localhost/website/de';
         $expectedResult['web']['secure']['base_link_url'] = 'https://localhost/website/de';
+        $expectedResult['level1']['level2']['level3']['level4'] = 'https://localhost/level4';
         $expectedResult['some_url'] = 'http://localhost/some';
+        $this->assertEquals($expectedResult, $this->_model->process($data));
+    }
+
+    public function testProcessEmptyArray()
+    {
+        $data = [];
+        $expectedResult = [];
         $this->assertEquals($expectedResult, $this->_model->process($data));
     }
 }

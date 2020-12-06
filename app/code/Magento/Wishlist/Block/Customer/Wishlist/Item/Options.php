@@ -11,6 +11,7 @@ namespace Magento\Wishlist\Block\Customer\Wishlist\Item;
  *
  * @api
  * @method \Magento\Wishlist\Model\Item getItem()
+ * @since 100.0.2
  */
 class Options extends \Magento\Wishlist\Block\AbstractBlock
 {
@@ -113,7 +114,7 @@ class Options extends \Magento\Wishlist\Block\AbstractBlock
                             $option['value'][$key] = $this->escapeHtml($value);
                         }
                     } else {
-                        $option['value'] = $this->escapeHtml($option['value']);
+                        $option['value'] = $this->escapeHtml($option['value'], ["a"]);
                     }
                 }
                 $options[$index]['value'] = $option['value'];

@@ -9,7 +9,7 @@ use Magento\Framework\App\Config\ReinitableConfigInterface;
 
 /**
  * @inheritdoc
- * @deprecated
+ * @deprecated 101.0.0
  */
 class ReinitableConfig extends MutableScopeConfig implements ReinitableConfigInterface
 {
